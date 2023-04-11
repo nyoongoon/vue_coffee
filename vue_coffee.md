@@ -444,4 +444,61 @@ Vue.component('Board', {
 <template>
   <ExampleComponent id="test" name="example-component"/>
 </template>
+<script>
+export default{
+  name: 'ExampleComponent',
+  props: {
+    name: {
+      type: String
+    }
+  },
+  mounted(){
+    console.log(this.$attrs.id) // test
+    console.log(this.$attrs.name) // undefined -> props라서 제외됨
+    console.log(this.$props.name) // example-component
+  }
+}
+</script>
+```
+
+### vm.$set, vm.$delete
+- $set 메소드는 반응형으로 선언된 값을 업데이트 하는 메소드 
+- -> data 옵션을 통해 선언된 데이터는 기본적으로 $set사용 안해도 값 갱신됨.
+- => $set을 사용하는 상황 : 반응형 데이터로 객체를 사용할 때.
+```
+- Vue는 컴포넌트가 생성될 때 data 옵션에 선언된 데이터들만 반응형 데이터로 인식
+- 이때 Vue는 내부적으로 이 값들을 감시할 감시자들을 생성.
+- 그러나 이 감시자들은 객체가 생성될 당시의 속성들은 감시할 수 있지만
+- 새로운 속성이 추가되거나 제거될 때 객체가 변화하는 것은 감지하지 못함.
+```
+```javascript
+export default {
+    data(){
+        return {
+            message: {text: 'Hello World!'}
+        }
+    }
+}
+```
+- 위에서 반응형 데이터로 선언된 message 객체의 경우 text라는 속성을 가지고 있고
+- Vue는 이 속성을 반응형 데이터로 인식하고 변화를 추적함
+- 그래나 message 객체에 새로운 속성이 추가되거나 
+- text 속성을 삭제한다면 Vue는 감지하지 못함
+- -> 이렇게 객체ㅔ 속성을 추가하거나 삭제할 때 Vue에 "값이 갱신되었음"
+- 을 수동으로 알려줄 수 있는 메소드가 바로 $set 메소드와 $delete 메소드
+- vm.$set(객체, 추가할 속성의 키, 추가할 속성의 값)
+- vm.$delete(객체, 제거할 속성의 키)
+
+```javascript
+export default{
+    data(){
+        return{
+            message: {text: 'Hello World!'}
+        }
+    },
+    mounted(){
+        this.$set(this.message, 'author', 'John')
+        this.$delete(this.message, 'text')
+    }
+}
 ```
