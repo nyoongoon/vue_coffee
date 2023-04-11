@@ -397,4 +397,51 @@ Vue.component('Board', {
 <p>입력한 메시지: {{message}}</p>
 ```
 - 체크박스는 기본적으로 불리언값, 그러나 여러 개의 체크박스를 사용하면 다른 자료형을 사용할 수 있음.
-- p.63
+- -> 이때 바인딩할 데이터를 배열로 초기화하지 않는다면 Vue는 데이터가 값의 집합이라고 판단하지 않고 불리언 자료형으로 처리함.
+```vue
+<!--단일체크 박스는 선택 여부에 대한 하나의 불리언 값을 가진다.-->
+<input type="checkbox" v-model="isChecked">
+<!--여러개의 체크박스는 선택된 값들의 배열을 가진다-->
+<!--value 속성이 없다면 하나의 불리언 값을 가진다-->
+<input type="checkbox" v-model="checkedValues" value="1">
+<input type="checkbox" v-model="checkedValues" value="2">
+```
+- 배열로 초기화 하지 않는다면 Vue가 불리언 자료형으로 처리해버림
+- value로 구분할 고유 값을 입력해주어야함. -> 입력하지 않으면 공통적으로 value값이 null 이되기 때문에 한꺼번에 선택됨
+- 라디오 버튼 : 반드시 하나의 요소만 선택할 수 있으므로 value값 가짐
+- 셀렉트 요소 : multiple 속성을 사용하여 여러개의 요소를 선택할 수 있음 -> 배열 사용
+- 라디오, 체크박스, 셀렉트 요소의 경우 다양한 자료형의 값을 바인딩 할수도 있음
+```vue
+<select v-model="selected" multiple>
+  <option :value="{name: 'Evan'}">Evan</option>
+  <option :value="{name: 'Martin'}">Martin</option>
+</select>
+```
+
+### v-once
+- 엘리먼트나 컴포넌트를 '한 번만' 렌더링하도록 만들어주는 디렉티브
+- 사용한 엘리먼트 뿐만아니라, 모든 하위 요소까지 한 번만 렌더링되기 최적화 가능
+
+### v-pre
+- 하위 요소에 대한 모든 컴파일을 하지 않음. 
+
+## Vue 인스턴스의 속성과 메소드
+### vm.$data, vm.$props
+- 해당 컴포넌트의 옵션's API에 접근 가능한 속성
+- 각각 해당 컴포넌트의 data 옵션과, props 속성에 접근 가능
+### vm.$el
+- Vue인스턴스의 DOM 엘리먼트를 의미
+### vm.$parent, vm.$children, vm.$root
+- $parent 속성과 $children 속성은 현재 인스턴스의 부모와 자식들을 의미
+- 부모는 하나이기 때문에 단수, 자식은 여럿이 될 수 있기 때문에 복수형
+- $root는 가장 위에 있는 부모인 트리의 루트를 의미
+- Vue CLI를 통해 생성한 프로젝트는 보통 App 컴포넌트가 루프 컴포넌트.
+
+### vm.$attrs 
+- $attrs 속성은 현재 컴포넌트에 주어진 HTML 속성 중 props 데이터로 인식되지 않은 속성들을 의미
+- props가 아닌 데이터임을 보장
+```vue
+<template>
+  <ExampleComponent id="test" name="example-component"/>
+</template>
+```
