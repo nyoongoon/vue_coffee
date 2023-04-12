@@ -614,3 +614,96 @@ const VNodeTree = {
 ```
 
 ## 범위 컴파일 사용하기
+- 범위 컴파일은 외부에서 주입받는 템플릿
+- Vue가 제공해주는 내장 컴포넌트인 slot 컴포넌트와 속성을 통해 사용할 수 있음.
+- 주입하는 템플릿에는 일반적인 템플릿 문법을 사용한 데이터 바인딩이 가능
+- 주의해야할 점은 이때 사용되는 데이터는 slot 컴포넌트를 가지고 있는 컴포넌트의 데이터가 아니라 
+- **템플릿을 주입하는 컴포넌트 쪽의 데이터임.** 
+### 단일 슬롯 범위 컴파일
+```vue
+<template>
+  <div>
+    <h1>Foo 컴포넌트의 내용입니다.</h1>
+    <slot></slot>
+  </div>
+</template>
+<script>
+export default{
+  name: 'Foo'
+}
+</script>
+```
+- 위와 같이 slot 컴포넌트에 아무런 이름을 부여하지 않을 경우 slot 컴포넌트는 자동으로 default라는 이름을 부여받게 됨
+```vue
+this.$slots.default 
+```
+- 이때 $slots의 값은 VNode 자료형을 가진 가상 DOM의 노드 객체들로 이루어진 배열
+```vue
+<template>
+  <div>
+    <foo>
+      <p>{{ message }}</p>
+    </foo>
+  </div>
+</template> 
+<script>
+import Foo from './Foo.vue'
+
+export default{
+  name: 'Bar',
+  components: {Foo},
+  data() {
+    return {message : 'Bar 컴포넌트의 상태입니다.'}
+  }
+}
+</script>
+```
+- 외부에서 주입하는 템플릿에 사용되는 데이터는 Foo 컴포넌트의 상태가 아니라 Foo 컴포넌트를 사용하고 있는 Bar 컴포넌트의 상태
+- 최종적으로 Foo 컴포넌트는 외부에서 주입받은 템플릿과 자신의 템플릿이 결합된 DOM 구조를 갖게 됨
+```html
+<div>
+    <h1>Foo 컴포넌트의 내용입니다.</h1>
+    <p>Bar 컴포넌트의 상태입니다.</p> <!-- 외부에서 주입받은 템플릿 -->
+</div>
+```
+### 다중 슬롯 범위 컴파일
+- slot 컴포넌트에 name 속성을 부여하면 여러 개의 slot 컴포넌트를 사용할 수도 있다. 
+```vue
+<template>
+  <div>
+    <slot name="title"></slot>
+    <slot></slot>
+  </div>
+</template>
+<script>
+export default {
+  name: 'Foo'
+}
+</script>
+```
+```vue
+<div>
+    <foo>
+      <h1 slot="title"> Foo 컴포넌트의 제목입니다.</h1>
+      <p> Foo 컴포넌트의 내용입니다. </p>
+    </foo>
+</div>
+```
+### slot 컴포넌트의 대체 템플릿
+- slot 컴포넌트를 사용할 때 주입받은 템플릿이 아니라 원래 slot 컴포넌트 내부에 있던 템플릿은 대체 템플릿으로 활용됨
+```vue
+<template>
+  <div>
+    <h1>Foo 컴포넌트의 내용입니다.</h1>
+    <slot>
+      <!-- 외부로부터 템플릿을 주입받으면 이 내용은 사라짐     -->
+      <p>주입받은 템ㅍ플릿이 없습니다.</p>
+    </slot>
+  </div>
+</template>
+<script>
+export default{
+  name: 'Foo'
+}
+</script>
+```
