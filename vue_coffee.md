@@ -769,5 +769,232 @@ export default{
 - 이리하여, 자식 뷰는 직접 스토어의 데이터를 받아오는 대신, 부모 뷰로부터 Props를 통해 데이터를 전달받음
 - 필요에 따라 자식뷰에서 직접 스토어의 상태를 가져올 수도 있음
 - 뿐만아니라 뷰는 사용자와의 상호작용을 통해 스토어의 상태에 따라 변경사항을 뷰에 반영 (이러한 뷰는 Vue컴포넌트가 역할을 담당함)
-- 
-- 
+
+
+## Vuex
+- Vuex의 데이터플로우 : 액션, 변이, 상태, 뷰 컴포넌트
+### 상태 (State)
+- Vuex의 상태는 애플리케이션에서 공통으로 관리할 상태, 즉 모델을 의미함
+- 상태는 단일 상태 트리를 사용, 원본 소스의 역할을 함
+- 단일 상태트리란 단 하나의 객체를 의미, 애플리케이션 내에서는 애플리케이션의 상태를 포함하고 있음
+- 단일 상태 트리를 사용하면 Vue Devtools를 통해 쉽게 디버깅을 할 수 있다는 장점을 가짐
+- 스토어에 연결된 컴포넌트는 저장소의 상태가 변경되면 변경 사항을 컴포넌트에 효율적으로 반영함. 
+- **컴포넌트에서 스토어의 상태에 접근해서 가져올 때는 다음과 같이 computed내에 작성**한다
+
+```vue
+<template>
+  <div>
+    {{ count }}
+  </div>
+</template>
+<script>
+  import store from 'src/store';
+  
+  export default {
+    computed: {
+      count() {
+        return store.state.count;
+      }
+    }
+  }
+</script>
+```
+- store.state.count 값은 count 라는 computed 속성에 포함되어 있기 때문에
+- store.state.count 값이 변경되면 컴포넌트의 computed 또한 자동으로 갱신되어 관련된 DOM 업데이트가 발생하게 됨.
+- 그러나 이 방법은 스토어를 사용하려고 하는 모든 컴포넌트에 스토어를 임포트해야하는 단점
+- -> Vuex는 store 옵션을 통해 루트 컴포넌트의 모든 자식 컴포넌트 저장소에 주입을 할 수 있음
+```vue
+import Vue from 'vue'
+import Vue from 'vuex'
+import store from 'src/stores'
+import StoreTest from 'src/components/StoreTest'
+
+Vue.use(Vuex)
+
+const app = new Vue({
+  el: '#app',
+  store,
+  components: { App },
+})
+```
+- 스토어가 주입된 이후부터 모든 자식 컴포넌트에서 스토어에 대하여 this.$store로 접근할 수 있음
+```vue
+<template>
+  <div>
+    {{ count }}
+  </div>
+</template>
+<script>
+  // import store from 'src/store';
+  export default {
+    computed: {
+      count() {
+        // return store.state.count;
+        return this.$store.state.count;
+      }
+    }
+  }
+</script>
+```
+- 하지만 이런 방법도 컴포넌트 내에서 여러 상태에 접근해야하는 경우 반복적이고 장황해질 수 있음
+- 이러한 부분을 mapState 헬퍼 함수를 통해 더욱더 간결하게 사용할 수 있음
+```vue
+// mapState 헬퍼 함수를 통해 상태가 컴포넌트에 매핑된 모습
+<template>
+  <div>
+    {{ count }} + {{ number }} = {{ sum }}
+  </div>
+</template>
+<script>
+  import { mapState } from 'vuex';
+  export default {
+    data(){
+      return {
+        number : 3
+      }
+    },
+    computed : mapState({
+      count: state => state.count,
+      sum(state){
+        return state.count + this.number
+      }
+    })
+  }
+</script>
+```
+- mapState 헬퍼 함수가 아닌 객체 전개 연선자를 이용하여 사용한 예시
+```vue
+<template>
+  <div>
+    {{ count }} + {{ number }} = {{ sum }}
+  </div>
+</template>
+<script>
+  import { mapState } from 'vuex';
+  export default {
+    data(){
+      return {
+        number : 3
+      }
+    },
+    computed : {
+      sum() {
+        return this.count + this.number
+      },
+      ...mapState([
+          'count'
+      ])
+    }
+  }
+</script>
+```
+
+### 게터 (Getter)
+- **게터는 스토어 내에서 Vue의 computed와 같은 역할**을 하는 아주 유용한 기능
+- 때로는 스토어의 상태를 바로 가져와서 사용하는 것이 아니라, 다음과 같이 일정 부분 가공해서 사용해야할 때도 있음
+```vue
+// computed 속성을 사용하여 상태의 데이터를 가공하는 코드 (문제 상황)
+<template>
+  <div>
+    {{ multiply }}
+  </div>
+</template>
+<script>
+  import { mapState } from 'vuex';
+  export default{
+    computed: {
+      multiply(){
+        return this.count * this.count
+      },
+      ...mapState([
+          'count'
+      ])
+    }
+  }
+</script>
+```
+- 만약 multiply 값을 다른 컴포넌트에서 다시 사용하고 싶다면, multiply 함수를 똑같이 다시 사용하려는 컴포넌트에 작성해야함
+- -> **재사용성 문제 --> 게터를 사용**
+```vue
+// Vuex Store에 게터를 선언한 모습
+<script>
+export default new Vuex.Store({
+  state: {
+    count: 2
+  },
+  getters: {
+    multiply (state){
+      return state.count * state.count
+    }
+  }
+})
+</script>
+```
+- 게터는 컴포넌트의 computed와 마찬가지로 내부에서 사용된 데이터가 변경될 때마다
+- 자동으로 갱신되고 한 번 계산된 후로는 재계산되기 전까지는 반환되는 값이 캐싱되는 점 또한 같음.
+- gettres 속성 내부에 선언되는 함수는 첫 번째 인자로 속해있는 스토어의 상태르 전달받고
+- 두 번째 인자로는 getters 속성 자체를 전달 받는다. 
+```javascript
+// 게터 내에서 다른 게터를 사용
+getters: {
+  add: state => {
+    return state.count + state.count;
+  },
+  multiply: (state, getters) => {
+    return getters.add * state.count;
+  }
+}
+```
+- 이렇게 선언된 게터는 store.getters 객체에 노출되고 이 속성을 통해 게터에 접근할 수 있따
+```
+store.getters.add
+store.getters.multiply
+```
+- 컴포넌트 내에서 computed 속성을 통해 접근
+```javascript
+computed: {
+    doneMemosCount(){
+        return this.$store.getters.doneTodosCount
+    }
+}
+```
+- 이러한 게터는 상태와 마찬가지로 mapGetters 헬퍼 함수를 통해 더욱더 편하게 이용할 수 있음]
+```vue
+<template>
+  <div>
+    {{ multiply }}
+  </div>
+</template>
+<script>
+  import { mapGetters } from 'vuex';
+  export default {
+    computed : {
+      ...mapGetters([
+          'multiply'
+      ]),
+    }
+  }
+</script>
+```
+
+### 변이 (Mutation)
+- 변이는 Vuex에서 스토어의 상태를 변경할 수 있는 유일한 방법
+- 각 변이 함수의 이름은 Flux패턴에서 설명했던 액션의 타입과 동일
+- **변이 함수의 내용은 실제 상태 수정을 할 수 있는 로직을 가지고 있음**
+- 즉, Flux 패턴에서 디스패처의 역할을 Vuex에서는 변이라는 이름을 가진 기능이 동일한 역할을 함
+```vue
+export default new Vuex.Store({
+  state:{
+    count: 2
+  },
+  mutations: {
+    INCREMENT (state, payload){
+      state.count = state.count + payload
+    }
+  }
+})
+```
+- 변이 핸들러 함수는 첫 번째 인자로 스토어의 상태를, 두 번쨰 인자로는 페이로드를 받음
+- 변이는 게터와 다르게 store.mutation으로 직접 접근이 불가능
+- 변이는 디스패처의 역할과 마찬가지로 어떤 액션이 들어왔을 때 그 액션이 가지고 있는 타입과 일치하는 함수를 실행시킬 뿐임
+- 변이를 호출하려면 반드시 store.commit 메소드를 통해 사용해야함.
