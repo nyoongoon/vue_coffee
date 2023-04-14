@@ -978,8 +978,8 @@ computed: {
 ```
 
 ### 변이 (Mutation)
-- 변이는 Vuex에서 스토어의 상태를 변경할 수 있는 유일한 방법
-- 각 변이 함수의 이름은 Flux패턴에서 설명했던 액션의 타입과 동일
+- 변이는 Vuex에서 **스토어의 상태를 변경할 수 있는 유일한 방법**
+- 각 변이 **함수의 이름**은 Flux패턴에서 설명했던 **액션의 타입과 동일**
 - **변이 함수의 내용은 실제 상태 수정을 할 수 있는 로직을 가지고 있음**
 - 즉, Flux 패턴에서 디스패처의 역할을 Vuex에서는 변이라는 이름을 가진 기능이 동일한 역할을 함
 ```vue
@@ -996,5 +996,170 @@ export default new Vuex.Store({
 ```
 - 변이 핸들러 함수는 첫 번째 인자로 스토어의 상태를, 두 번쨰 인자로는 페이로드를 받음
 - 변이는 게터와 다르게 store.mutation으로 직접 접근이 불가능
-- 변이는 디스패처의 역할과 마찬가지로 어떤 액션이 들어왔을 때 그 액션이 가지고 있는 타입과 일치하는 함수를 실행시킬 뿐임
+- 변이는 디스패처의 역할과 마찬가지로 **어떤 액션이 들어왔을 때** 그 액션이 가지고 있는 **타입과 일치하는 함수를 실행**시킬 뿐임
 - 변이를 호출하려면 반드시 store.commit 메소드를 통해 사용해야함.
+
+```vue
+<template>
+  <div>
+    <button @click ="increment">더하기</button>
+  </div>
+</template>
+<script>
+  import store from "../store";
+  export default{
+    methods: {
+      increment(){
+        store.commit('INCREMENT', 2)
+      }
+    }
+  }
+</script>
+```
+- 이러한 변이에 대한 헬퍼함수로 Vuex에서는 mapMutations 헬퍼 함수를 제공함
+```vue
+//mapMutations 헬퍼 함수를 이용하여 변이를 호출하는 모습
+<template>
+  <div>
+    <button @click="increment">더하기</button>
+  </div>
+</template> 
+<scirpt>
+  import {mapMutations} from "vuex"
+  export default{
+    methods: {
+      ...mapMutations([
+        "INCREMENT"
+      ]),
+      increment(){
+        this.INCREMENT(2)
+      }
+    }
+  }
+</scirpt>
+```
+- 만약 변이 안에서 하나 이상의 인자를 사용하려한다면 인자를 순서대로 나열하는 것이 아니라, 하나의 객체 형태로 전달해야함
+```vue
+// Object형태의 payload를 인자로 받는 변이 함수 모습
+<script>
+export default new Vuex.Store({
+  state: {
+    count: 2
+  },
+  mutations: {
+    DECREMENT (state, payload){
+      state.count = state.count - payload.count
+    }
+  }
+})
+</script>
+```
+```vue
+<template>
+  <div>
+    <button @click="decrement">빼기</button>
+  </div>
+</template>
+<script>
+  import { maoMutations } from "vuex"
+  export default {
+    methods: {
+      ...mapMutations([
+          "DECREMENT"
+      ]),
+      decrement(){
+        this.DECREMENT({ count: 2 })
+      }
+    }
+  }
+</script>
+```
+- 변이에서 가장 중요한 사실은 변이는 반드시 동기적이어야 한다는 것 (디버깅이 어려워지는 문제)
+- 비동기에 대한 변이를 해결할 수 있는 것이 "액션"
+
+### 액션
+- 액션의 경우 크게 2가지 역할을 담당
+- 첫 번째는 '변이에 대한 커밋'이라는 것
+- 두 번째는 '비동기적인 작업'이 포함될 수 있다는 점
+```vue
+<script>
+export default new Vuex.Store({
+  state:{
+    count: 2
+  },
+  mutations: {
+    INCREMENT (state, payload){
+      state.count = state.count + payload
+    }
+  },
+  actions: {
+    increment(context, payload){
+      context.commit("INCREMENT", payload)
+    }
+  }
+})
+</script> 
+```
+- 액션 핸들러는 첫 번째 인자로 context를 받는데, 이 인자는 스토어의 메소드, 속성들을 그대로 가지고 있는 값.
+- 그러므로 context.commit과 같이 스토어의 메소드를 context라는 값을 통해 실행시킬 수 있음.
+- 그리고 액션의 두 번째 인자는 변이와 마찬가지로 payload. 
+- 액션은 dispatch라는 메소드를 통해서 사용할 수 있음.
+
+```vue
+// 액션을 호출하는 방법
+<template>
+  <div>
+    <button @click="increment">더하기</button>
+  </div>
+</template>
+<script>
+  import store from "../store"
+  export default{
+    methods: {
+      increment(){
+        store.dispatch('increment', 3);
+      }
+    }
+  }
+</script>
+```
+- 혹은 mapActions 헬퍼 함수를 통해서도 사용할 수 있음
+```vue
+<template>
+  <div>
+    <h1>Actions</h1>
+    <button @click="incrementHandler">더하기</button>
+  </div>
+</template>
+<script>
+  import {mapActions} from 'vuex'
+  export default{
+    methods: {
+      ...mapActions([
+          'increment'
+      ]),
+      incrementHandler(){
+        this.increment(3);
+      }
+    }
+  }
+</script>
+```
+- 액션의 좀 더 실용적인 예는 앞에서 설명했던 비동기 통신을 통한 변이가 이루어져야 할 때임
+```vue
+<script>
+ actions: {
+  // 전달인자 분해 문법을 사용하면 context.commit을 바로 가져올 수 있음
+   setAsyncUserInfo({commit}, userId){
+     commit('SET_USER_INFO_REQUEST')
+     api.fetchUserInfo(response => {
+       commit('SET_USER_INFO_SUCCESS', response.data.user)
+     });
+   }
+ }
+</script>
+```
+- 액션 핸들러는 서버와 통신하여 사용자 데이터를 받아오고 그 후 변이를 요청하는 commit 메소드를 호출함
+- 이러한 방식의 변이는 Vue Devtools에서 commit 메소드의 호출을 인식했을 때 동기적으로 상태가 업데이트 되므로 제대로된 상태 추적이가능하게 됨.
+- 또 한가지 실용적인 예는
+- 여러 개의 변이가 필요한 하나의 액션을 수행해야하는 경우. 
