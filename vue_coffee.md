@@ -1707,3 +1707,41 @@ router.afterEach((to, from)=>{
 ##### beforeRouterLeave
 - this를 통해 컴포넌트에 접근 가능
 - next(false)를 사용하여 다음 라우트로의 이동을 취소할 수도 있음
+
+# 메모 관리 애플리케이션 실습
+## 컴포넌트 구조
+- App
+- AppHeader
+- MemoApp(Memo, MemoForm)
+- AppHeader 컴포넌트와 MemoApp컴포넌트는 상태 공유 X
+- 메모 애플리케이션에 대한 상태는 MemoApp 컴포넌트가 관리
+
+
+## 메모 데이터 생성 기능 구현
+- MemoForm : 사용자의 메모를 입력받는 폼 컴포넌트
+- Memo : 각각의 메모의 상태를 표현할 수 있는 컴포넌트
+- MemoApp : 메모들의 상태를 관리하는 컴포넌트 (부모 컴포넌트)
+- 부모컴포넌트에서 상태 초기화 해야함 (데이터 흐름 단방향이므로 메모와 연관된 모든 자식 컴포넌트에서 알 수 있어야함)
+
+### 컴포넌트 초기화
+```vue
+<script>
+export default {
+  name: "MemoApp",
+  data() {
+    return {
+      memos: [],
+    };
+  },
+  created() {
+    this.memos = localStorage.memos ? JSON.parse(localStorage.memos) : [];
+  },
+  components:
+    {
+      MemoForm, Memo
+    }
+}
+</script>
+```
+- 초기화에 필요한 데이터를 외부에서 받을 경우
+- 일반적으로 훅의 실행타이밍이 가장 빠른 created 훅에서 데이터를 받아옴
