@@ -1103,7 +1103,7 @@ export default new Vuex.Store({
 - 액션 핸들러는 첫 번째 인자로 context를 받는데, 이 인자는 스토어의 메소드, 속성들을 그대로 가지고 있는 값.
 - 그러므로 context.commit과 같이 스토어의 메소드를 context라는 값을 통해 실행시킬 수 있음.
 - 그리고 액션의 두 번째 인자는 변이와 마찬가지로 payload. 
-- 액션은 dispatch라는 메소드를 통해서 사용할 수 있음.
+- **액션은 dispatch라는 메소드를 통해서 사용**할 수 있음.
 
 ```vue
 // 액션을 호출하는 방법
@@ -1162,4 +1162,548 @@ export default new Vuex.Store({
 - 액션 핸들러는 서버와 통신하여 사용자 데이터를 받아오고 그 후 변이를 요청하는 commit 메소드를 호출함
 - 이러한 방식의 변이는 Vue Devtools에서 commit 메소드의 호출을 인식했을 때 동기적으로 상태가 업데이트 되므로 제대로된 상태 추적이가능하게 됨.
 - 또 한가지 실용적인 예는
-- 여러 개의 변이가 필요한 하나의 액션을 수행해야하는 경우. 
+- **여러 개의 변이가 필요한 하나의 액션을 수행**해야하는 경우. 
+```vue
+// 액션 내에서 연속적인 비동기처리를 하는 모습
+<script>
+export default new Vuex.Store({
+  actions:{
+    setAsyncUserInfo({ commit }, userId){
+      commit('SET_USER_INFO_REQUEST')
+      api.fetchUserInfo(response => {
+        commit('SET_UESR_INFO_SUCCESS', response.data.user)
+        
+        // 받아온 사용자의 정보를 토대로 사용자의 친구목록을 받아온다
+        const userId = response.data.user.id;
+        commit('SET_USER_FRIENDS_REQUEST')
+        api.fetchUserFriends(userId, response => {
+          // 친구목록에 대한 API가 성공 시
+          commit('SET_USER_FRIENDS_SUCCESS', response.data.friends);
+          // return Promise.resolve(); // 프로미스 반환할수도 있음 !! -> 비동기 로직을 마친후의 처리에 대한 추가 작업을 수행
+        }, err =>{
+          // 친구목록에 대한 API가 실패 시
+          commit('SET_USER_FRIENDS_FAILURE');
+          throw new Error(err);
+        })
+      }, err =>{
+        // 사용자 데이터 요청이 실패했을 경우에 사용자 정보를 초기화한다.
+        commit('SET_USER_INFO_FAILURE');
+        throw new Error(err);
+      });
+    }
+  }
+})
+</script>
+```
+- 이처럼 액션은 비동기 흐름을 제어하여 변이를 수행해야할 때 효과적.
+- 또한, 액션이 Promise를 반환하게 작성한다면 해당 액션을 사용하는 쪽에서
+- -> 비동기로직을 마친 후의 처리에 대한 추가작업을 수행할 수 있음
+- 액션이 Promise를 반환하면 해당 액션을 호출하는 쪽에서 ES6의 Promise문법, 또는 자바스크립트 ES7의 async/await 문법으로사용가능
+```javascript
+// Promise 패턴으로 작성 가능
+store.dispatch('setAsyncUserInfo').then(()=>{
+   // 액션이 종료된 후의 작업을 수행 
+});
+// 또는 async await 패턴도 사용 가능
+async onUpdateUserInfo(){
+    await store.dispatch('setAsyncUserInfo');
+}
+```
+
+### Vuex 모듈 관리
+- 규모의 크기에 따라 상황에 맞게 분리.
+- 애플리케이션 구조가 커질수록 각각의 관심사별로 파일을 분리하는 것이 좋음
+```
+-- src
+    |_ store
+         |_ actions.js
+         |_ mutations.js
+         |_ getters.js
+         |_ states.js
+         |_ index.js
+```
+- Vuex에서는 이러한 모듈을 효과적으로 관리하기 위해 modules 옵션을 제공함.
+```vue
+// modules 옵션을 이용한 모습
+<script>
+  export default new Vuex.Store({
+    modules: {
+      a: foo,
+      b: bar
+    },
+    state: {
+      // ...
+    },
+    actions: {
+      // ...
+    },
+    mutations: {
+      // ...
+    },
+    getters: {
+      // ...
+    }
+  })
+</script>
+```
+```
+-- src
+    |_ store
+         |_ actions.js
+         |_ mutations.js
+         |_ getters.js
+         |_ states.js
+         |_ index.js
+         |_ modules.js
+                |_ foo.js
+                |_ bar.js
+```
+- 스토어 내의 변이 유형에 따라 상수를 사용하는 것은 Flux 패턴에서 일반적인 방법
+- 변이 유형에 대한 상수를 사용하는 상황에서 
+- -> 스토어가 각각의 관심사에 맞게 분리되었다면 
+- -> 변이의 타입에 대한 상수에도 모듈에 따라 접두사 혹은 접미사를 붙인다면 효율적으로 관리할 수 있음
+```javascript
+//변이 유형에 대한 상수
+// foo에 대한 상수 타입
+const FETCH_FOO = "FOO/FETCH_FOO"
+// bar에 대한 상수 타입
+const FETCH_BAR = "BAR/FETCH_BAR"
+```
+
+### 정리
+- Vuex의 효과는 Vue Devtools와 함께 할 때 효과적
+- Vuex의 큰 장점으로는 중앙 집중식 저장소 역할을 통해 컴포넌트들 간의
+- -> 분산된 상태를 효육적으로 관리할 수도 있음
+- -> 애플리케이션에 예측이 가능하다는 점 역시 큰 장점
+
+# Vue Router
+- Vue CLI를 사용하여 프로젝트를 생성하면 작성되어 있는 기본적인 라우터의 모습
+```js
+import Vue from 'vue'
+import Router from 'vue-router'
+import HelloWorld from '@/components/HelloWorld'
+
+vue.use(Router)
+
+export default new Router({
+    routes: [
+        {
+          path: '/',
+          name: 'HelloWorld',
+          component: HelloWorld  
+        },
+    ]
+})
+```
+- 현재 경로가 루트인 경우 HelloWorld라는 컴포넌트를 페이지에 삽입하고 렌더하는 코드
+
+## Vue 애플리케이션에서 Vue Router 사용하는 법
+- Vue Router를 사용하려면 우선 명시적으로 Vue Router를 Vue에 추가해줘야함
+```js
+import Vue from 'vue'
+import VueRouter from 'vue-router'
+
+Vue.use(VueRouter)
+```
+- 이 후 Vue Router 인스턴스를 생성하고 애플리케이션에서 사용할 라우트 설정을 Vue Router에 추가해야함
+```js
+export default new VueRouter({
+    routes: [
+        {
+            path: '/foo',
+            component: Foo
+        },
+        {
+            path: '/bar',
+            component: Bar
+        }
+    ]
+});
+```
+- routers 옵션은 여러 개의 라우트 설정을 갖고 있는 배열
+- 규모가 커지게 된다면 라우트 설정만을 선언하는 파일을 따로 분리해줄 수 있음
+```js
+// 인증페이지에 대한 라우트 설정과 사용자 페이지에 대한 라우트 설정 분비
+
+// src/router/auth.js
+export const AuthRouters = [
+    {
+        path: 'auth/login',
+        name: 'Login',
+        component: Login
+    }
+]
+// src/router/user.js
+export const UserRouters = [
+    {
+        path: '/user/profile',
+        name: 'Profile',
+        component: Profile
+    }
+]
+```
+```js
+// 각각 선언된 라우트 설정을 라우터에 주입하는 코드
+// src/router/index.js
+import {AuthRouters} from '@/router/auth'
+import {UserRouters} from '@/router/user'
+
+export default new VueRouter({
+    routes:[
+        ...AuthRouter,
+        ...UserRouters
+    ]
+    
+})
+```
+
+## Vue Router의 라우트 설정 속성들.
+- Vue Router의 routes 속성에 선언된 라우트 설정 객체의 모습
+```js
+new VueRouter({ 
+    routes:[
+        { // 라우트 설정 객체
+            path: '/foo',
+            name: 'Foo',
+            component: Foo
+        }
+    ]
+})
+```
+- 라우트 설정 객체는 필수값으로 path를 가짐
+### 라우트 설정 객체의 주요 속성들
+- path : 라우트가 가질 경로
+- name : 라우트의 이름
+- component : 라우트가 불러와졌을 때 <router-view>에 주입될 컴포넌트
+- components : 라우트가 불러와졌을 떄 이름을 가지는 뷰에 주입될 컴포넌트들
+- redirect : 리다이렉트할 라우트
+- alias : 라우트의 별칭
+- children : 중첩된 라우트들
+- props : 동적 세그먼트 변수를 컴포넌트의 props 속성으로 주입할 것인지 여부
+
+## 동적 라우트 매칭
+### 동적 세그먼트란 무엇인가?
+- 동적 라우트란 posts/{게시글의 아이디} 와 같이 경로에 변수를 가지고 있는 라우트를 의미.
+- 이때 경로 내부에 들어있는 변수를 동적 세그먼트라고 부름
+- 동적 세그먼트에 어떤 값이 들어올 지 알 수 없으므로 우리는 라우트를 선언할 떄 path속성을 사용하여 패턴을 정의
+```js
+// 동적 라우트를 선언한 모습
+new VueRouter({
+  routes: [
+      // 동적 세그먼트를 콜론으로 시작한다.
+      {path : 'posts/:postId', component: PostDetailPage}
+  ]
+})
+```
+- 동적 세그먼트는 :(콜론)기호로 시작하며, 콜런 뒤의 단어는 변수명으로 사용됨
+- 이렇게 선언된 라우트의 동적 세그먼트는 컴포넌트 내에서 this.$rouste.params를 통해 접근할 수 있음
+
+## 동적 세그먼트의 변경에 반응하기
+- /posts/1 에서 /posts/2로 변경되었을 때 
+- /posts/:postId와 같은 동적 라우트를 사용했다면 postId에 해당하는 동적 세그먼트가 변경 되더라도
+- VueRoute는 이를 동일한 경로로 인식하기 때문에 한 번 사용되었던 컴포넌트를 새로 불러오지 않고
+- -> 기존에 불러왔던 컴포넌트를 재사용함 -> csr의 장점 활용
+- 주의점) creted나 mounted와 같은 기존에 불러왔ㄷ너 컴포넌트의 라이플 사이클 훅이 호출되지 않음
+- 이렇게 동일한 경로의 동적 세그먼트만 변겨오디는 상황에서 우리는 Vue의 watch 속성을 사용하여 $route 객체를 감시
+
+```js
+export default{
+    name : 'PostDetailPage',
+    watch: {
+        '$route'(to, from){
+            console.log('라우트 객체가 변경되었습니다.')
+        }
+    }
+}
+```
+- 또는 VueRouter에서 제공해주는 네비에기연 가드의 일종인 
+- beforeRouteUpdate가드를 사용하여 라우트 객체가 갱신되었음을 감지할 수도 있음.
+
+```js
+export default{
+    name: 'PostDetailPage',
+    beforeRouteUpdate(to, from, next){
+        console.log('라우트 객체가 변경되었습니다.')
+        //next 함수를 호출하지 않으면 다음 라우트로 이동하지 않는다.
+        next()
+    }
+}
+```
+
+## 매칭 우선순위
+- Vue Router는 경로가 변경되었을 때 현재 경로와 일치하는 라우트를 찾기 위해
+- routes 배열을 탐색
+- 주의점)배열의 머리인 0번 원소부터 배열의 꼬리인 가장 마지막 원소의 순서대로 진행
+```js
+new VueRouter({
+    routes: [
+        {path: '/posts/:postId', name: 'PostDetailPage'},
+        {path: '/posts/hello', name: 'HelloPost'}
+    ]
+})
+```
+- 사용자가 /posts/hello 라는 경로로 이동하면 PostDetailPage 라우트로 이동하게 됨
+- 순서 반대로 설정해야 각 상황에 대해 처리 가능함
+
+## 중첩된 라우트
+- 중첩된 라우트란 /posts/foo, /posts/bar와 같이 여러 단계로 중첩된 라우트를 말함
+- cf) 각 경로들의 페이지가 레이아웃과 내용이 모든 완벽하게 다른 페이지라면 중첩된 라우트 기능은 사용할 수 없음
+
+### 중첩된 라우트 기능 사용하지 않고 만들어보기
+- 같은 레이아웃을 가진 페이지를 만드려면 
+- 모두 같은 컴포넌트를 매칭한 후 컴포넌트 내부에서 v-if 또는 v-show를 사용하여 자식 컴포넌트 조건부 노출해야함
+```js
+new VueRouter({
+    routes: [
+        {
+            path: '/posts/foo',
+            name: 'Foo',
+            component: Post
+        },
+        {
+            path: '/posts/bar',
+            name: 'Bar',
+            component: Post
+        }
+    ]
+})
+```
+```vue
+<template>
+  <div>
+    <h4>Post 컴포넌트입니다.</h4>
+    <Foo v-if="$route.fullPath === 'posts/foo'"/>
+    <Foo v-else="$route.fullPath === 'posts/bar'"/>
+  </div>
+</template>
+```
+
+### 중첩된 라우트 사용하기
+- 현재 경로와 일치하는 컴포넌트들을 그리기 위해서 **router-view** 컴포넌트를 사용
+- 처음 Vue CLI를 사용하여 프로젝트 생성하면 router-view 컴포넌트는 루트 컴포넌트인 App.vue에만 존재함
+```vue
+//App.vue에 선언된 router-view 컴포넌트
+<div id="app">
+  <router-view></router-view>
+</div>
+``` 
+- 위처럼 일반적인 경우 router-view는 루트 컴포넌트에만 존재하지만,
+- 중첩된 라우트는 router-view 컴포넌트를 중첩해서 사용할 수 있다는 것을 의미.
+- 상단 예시처럼 v-fi를 사용해 조건부 노출했던 코드에 중첩된 라우트 기능을 사용가능
+```vue
+<template>
+  <div id="post">
+    <h4>Post 컴포넌트입니다.</h4>
+    <!-- Foo, Bar 컴포넌트가 있던 자리에 router-view를 삽입    -->
+    <router-view></router-view>
+  </div>
+</template> 
+```
+- 애플리케이션의 DOM 구조는 router-view컴포넌트가 중첩된 모습이 된다.
+```vue
+<!-- 중첩된 라우트를 사용한 DOM 구조의 모습-->
+<div id="app">
+  <router-view> <!--  첫번째 router-view에는 Post 컴포넌트가 렌더됨  -->
+    <div id="post">
+      <h4>Post 컴포넌트입니다.</h4>
+      <router-view></router-view> <!-- 중첩된 router-view에 다른 컴포넌트를 렌더할 수 있음.-->
+    </div>
+  </router-view>
+</div>
+```
+- 중첩된 라우트를 선언할 때는 children 속성을 사용
+```js
+new VueRouter({
+    routes:[
+        {
+            path:'/posts',
+            component: Post,
+            children: [
+                {
+                    path:'',
+                },
+                {
+                    path:'foo', // /posts/foo
+                    component: Foo
+                },
+                {
+                    path:'bar',
+                    component: Bar
+                }
+            ]
+        }
+    ]
+})
+```
+
+
+## 프로그램 방식 네비게이션
+- VueRouter는 router-link 컴포넌트를 사용하여 anchor 태그를 만드는 방법 외에도
+- 컴포넌트 내에서 this.$router로 접근할 수 있는 라우터 객체의 메소드를 사용하여 라우팅할 수 있도록 지원함
+- 이렇게 코드를 사용하여 실행하는 방법을 프로그래밍 방식으로 수행한다고 함
+
+### router.push
+```js
+// push: Function(locatoin, onComplete?, onAbort?)
+
+$router.puth('/posts') //경로 직접 전달
+//라우트 객체를 통해 경로를 전달
+$router.push({path: '/posts'}, ()=>{
+    console.log('라우트 이동 완료')
+}, ()=>{
+    console.log('라우트 이동 중단')
+}) 
+```
+
+### router.replace
+- push와 같은 역할을 하지만, 브라우저 히스토리에 이동한 라우트가 추가되지 않음
+
+### router.go
+```js
+$router.go(1) // 한단계 앞으로
+$router.go(-1) // 한단계 뒤로
+$router.go(3) // 3단계 앞으로
+```
+
+### 이름을 가지는 뷰
+- 여러개의 레이아웃을 사용해야하는 경우 생김
+- 이때 각 레이아웃은 중첩된 상태가 아닌 동시에 같은 계층에 존재하는 레이아웃
+- 이런경우 router-view 컴포넌트에 이름을 부여함으로써 라우트 설정 시 원하는 router-view에 컴포넌트를 삽입할 수 있음
+```vue
+<!-- router-view 컴포넌트에 이름을 부여한 모습-->
+<router-view name="header"></router-view>
+<router-view name="aside"></router-view>
+<router-view></router-view>
+<router-view name="footer"></router-view>
+```
+- 이후 Vue Router 인스턴스를 생성할 때 라우트 설정 객체의
+- components 속성을 사용함으로써 이름을 가진 뷰에 여러 개의 컴포넌트를 삽입할 수 있음.
+```js
+new VueRouster({
+    routes:[
+        {
+            path: '/',
+            components:{
+                header: AppHeader,
+                aside: AppAside,
+                default: Content,
+                footer: AppFooter
+            }
+        }
+    ]
+})
+```
+
+## 라우트 컴포넌트에 속성 전달 (props 속성)
+- 동적 라우트 매칭에서 $route.params 속성으로 동적 세그먼트에 접근할 수 있었음
+- 그러나, 컴포넌트 내에서 $route를 사용하면 특정 URL에서만 사용할 수 있는 컴포넌트가 됨
+- -> 컴포넌트 자체의 재사용성을 떨어뜨리게돤다.
+- --> VueRoute는 이러한 컴포넌트와 라우트 간의 동적 세그먼트를 
+- 컴포넌트의 props 속성으로 주입할 수 있는 기능을 제공
+- -> props속성을 통해 동적 세그먼트를 주입한다면 
+- -> 이 컴포넌트는 라우트에 postId 동적 세그먼트가 없더라도 props를 통해서 해당 데이터를 주입받을 수 있기 때문에 결합도가 사라짐
+- -> **this.$route.postId 아니라, this.postId로 접근가능** 해짐
+
+```vue
+<script>
+new VueRouter({
+  routes:[
+    {
+      path: '/posts/:postId',
+      components:{
+        header: AppHeader,
+        contents: Example
+      },
+      //뷰의 이름을 따로 사용하여 옵션을 설정할 수 있음
+      props:{
+        contents: true
+      }
+    }
+  ]
+})
+</script>
+```
+- props 속성을 사용해서 선언한 postId 변수
+```js
+export default{
+    name: 'Example',
+    props:{
+        postId:{
+            typs: String, // ==> VueRouter를 통해 동적 세그먼트 props로 전달받음 !!! 
+            required: true
+        }
+    },
+    created(){
+        // 컴포넌트의 props 속성으로 주입된 postId 동적 세그먼트에 바로 접근 가능
+        console.log(this.postId)
+    }
+}
+```
+
+## 해시 모드와 히스토리 모드
+### 해시모드
+- Vue Router는 두가지 라우팅 모드르 지원
+- 기본값은 해시 모드
+```
+// URL에 해시 프래그먼트를 사용하는 모습
+http://localhost:8080#hello
+```
+- 최근에는 HITML5의 HistoryAPI를 사용하는 URL 변경 방법을 더 선호하고 있음
+### 히스토리 모드
+- HTML5의 스펙인 historyAPI를 사용하는 방법
+- 이 API는 pushState라는 메소드를 제공
+- -> url을 변경하고 브라우저의 히스토리도 남겨지지만 실제로 페이지는 이동하지 않는 기능
+- -> pushState 메소드를 사용하여 URL을 변경하면 브라우저가 페이지 이동으로 인식하지 않고
+- URL변경 내용이 저장되기 떄문에 실제 페이지 이동과 유사한 사용자 경험
+
+### 네비게이션 가드
+- 네비게이션 가드는 라우터에서 다른 라우터로 이동하는 네비게이팅이 수행될 때 실행되어
+- 라우터의 이동을 막거나 혹은 다른 라우터로 리다이렉팅 할 수 있는 기능.
+- 적용범위에 따라 전역 가드, 라우트별 가드, 컴포넌트별 가드로 나뉨.
+- 또한 가드의 호출 타이밍에 따라 before 훅과 after 훅으로 나뉨
+
+#### 전역 가드
+- 주로 애플리케이션 내에서 공통적으로 수행해야하는 동작을 정의할 때 사용
+##### beforeEach
+```js
+const router = new VueRouter({...})
+router.beforeEach((to, from, next)=>{
+    // ...
+    next()
+})
+```
+- to : 다음에 이동할 라우트 정보
+- from : 이전 라우트 정보
+- next : 이 함수가 명시적으로 호출되어야 다음 라우트로 이동을 시작함.
+- -> beforeEach를 포함한 모든 before훅은 명시적으로 next함수가 호출되지 않으면 다음 라우터로 이동하지 않음
+- next 함수는 전달인자에 따라 다른 동작을 하게 됨
+```js
+// 다음 라우트로 이동
+next() 
+// 현재 네이게이팅을 중단하고 이전 라우트로 돌아감
+next(false)
+// 인자로 주어진 라우트로 이동
+next('/')
+next({path: '/'})
+// 인자가 Error 객체라면 라우트 이동이 취소되고 router.onError를 사용하여 등록된 콜백이 호출됨
+const error = new Error('Navigation Failed')
+next(error)
+```
+- beforeEach 훅의 이러한 기능을 사용하면 현재 라우트로 이동할 권한이 있는지 여부를 확인하는 용도로 사용 가능
+##### afterEach
+```js
+const router = new VueRouter({...})
+router.afterEach((to, from)=>{
+    // ...
+})
+```
+#### 라우트별 가드
+##### beforeEnter
+- beforeEnter 훅은 라우트의 설정 객체에 직접 정의할 수 있음
+
+#### 컴포넌트별 가드
+- leave 훅 사용 가능
+##### beforeRouterEnter
+##### beforeRouterLeave
+- this를 통해 컴포넌트에 접근 가능
+- next(false)를 사용하여 다음 라우트로의 이동을 취소할 수도 있음
