@@ -1,6 +1,7 @@
 <template>
   <div class="memo-app">
-    <memo-form/>
+<!--    <memo-form v-on:addMemo="addMemo"/> 아래와 같은 의미 -->
+    <memo-form @addMemo="addMemo"/>
     <memo/>
   </div>
 </template>
@@ -19,10 +20,21 @@ export default {
   created() {
     this.memos = localStorage.memos ? JSON.parse(localStorage.memos) : [];
   },
-  components:
-    {
+  components: {
       MemoForm, Memo
+  },
+  methods: {
+    addMemo(payload){
+      // MemoForm에서 올려받은 데이터를 먼저 컴포넌트 내부데이터에 추가
+      this.memos.push(payload);
+      // 내부 데이터를 문자열로 변환 후, 로컬 스토리지에 저장
+      this.storeMemo();
+    },
+    storeMemo(){
+      const memosToString = JSON.stringify(this.memos);
+      localStorage.setItem('memos', memosToString);
     }
+  }
 }
 </script>
 
