@@ -1724,6 +1724,7 @@ router.afterEach((to, from)=>{
 - 부모컴포넌트에서 상태 초기화 해야함 (데이터 흐름 단방향이므로 메모와 연관된 모든 자식 컴포넌트에서 알 수 있어야함)
 
 ### 컴포넌트 초기화
+#### MemoApp
 ```vue
 <script>
 export default {
@@ -1745,3 +1746,126 @@ export default {
 ```
 - 초기화에 필요한 데이터를 외부에서 받을 경우
 - 일반적으로 훅의 실행타이밍이 가장 빠른 created 훅에서 데이터를 받아옴
+
+#### scoped 속성이란?
+- MemoForm 컴포넌트의 style 태그에 scoped라는 속성을 입력함
+- 이 속성을 통해 스타일의 유효범위를 적용해 해당 컴포넌트의 돔 엘리먼트에만 스타일을 적용가능.
+- -> scoped 옵션을 주면 data-v 속성이 자동으로 입력됨
+
+#### MemoForm
+- 컴포넌트 data 속성에 사용자가 입력하는 데이터를 제목과 내용으로 나누어 저장할 수 있도록 컴포넌트 내의 데이터로 각각 초기화함.
+- 컴포넌트의 데이터로 저장하기위해서 다음과 같이 먼저 data속성에 저장하고자 하는 값에 대한 키와 값을 등록해줘야함.
+```vue
+<script>
+export default{
+  name: 'MemoForm',
+  data(){
+    return {
+      // 사용자가 입력할 제목과 콘텐츠가 저장될 데이터의 키와 값
+      title: '',
+      content: ''
+    }
+  }
+}
+</script>
+```
+- 위에서 등록한 데이터를 v-model 디렉티브를 이용하여 양방향 바인딩
+```vue
+<template>
+  <div class="memo-form">
+    <form @submit.prevent="addMemo">
+      <fieldset>
+        <div>
+          <input class="memo-form__title-form"
+                 type="text"
+                 v-model="title"
+                 placeholder="메모의 제목을 입력해주세요."/>
+          <textarea class="memo-form__content-form"
+                    v-model="content"
+                    placeholder="메모의 내용을 입력해주세요"/>
+          <button type="reset"><i class="fas fa-sync-alt"></i></button>
+        </div>
+        <button type="submit">등록하기</button>
+      </fieldset>
+    </form>
+  </div>
+</template>
+```
+- submit 이벤트의 event.preventDefault 함수하여 새로고침 방지
+- 이 옵션을 통해 submit 이벤트의 기본 동작을 막은 후
+- addMemo 함수에서 사용자가 입력한 제목과 내용에 대한 데이터를 부모 컴포너트인 MemoApp 컴포넌트에 emit 이용하여 전파
+```javascript
+methods: {
+    addMemo(){
+      // 비구조화 할당 구문을 이용하여 변수를 선언
+      const {title, content} = this;
+      // 데이터의 고유한 식별자를 생성
+      const id = new Date().getTime();
+
+      // 제목이나 내용을 입력하지 않은 경우를 대비하여 방어 코드를 추가.
+      const isEmpty = title.length <= 0 || content.length <= 0;
+      if(isEmpty){
+        return false;
+      }
+      // addMemo 이벤트를 발생시키고 payload로 사용자가 입력한 데이터를 넣어주기
+      this.$emit('addMemo', {id, title, content});
+    }
+  }
+```
+- 이제 부모 컴포넌트인 MemoApp 컴포넌트는 자식 컴포넌트인 MemoForm에서 인자로 전달한 데이터를 로컬 스토리지에 추가해주면 됨
+```javascript
+methods: {
+    addMemo(payload){
+      // MemoForm에서 올려받은 데이터를 먼저 컴포넌트 내부데이터에 추가
+      this.memos.push(payload);
+      // 내부 데이터를 문자열로 변환 후, 로컬 스토리지에 저장
+      this.storeMemo();
+    },
+    storeMemo(){
+      const memosToString = JSON.stringify(this.memos);
+      localStorage.setItem('memos', memosToString);
+    }
+}
+```
+- v-on 디렉티브를 이용하여 자식 컴포넌트인 MemoForm 컴포넌트의 addMemo이벤트 콜백함수로 연결
+
+### 컴포넌트 업데이트
+```vue
+<script>
+export default {
+    method:{
+        handleDblClick(){
+            this.isEditing = true;
+            //content에 focus 이벤트를 추가하기
+            console.log("handleDbClick =>", this.$refs.content);
+            this.$refs.content.focus();
+        }    
+    },
+    beforeUpdate(){
+        console.log("beforeUpdate => ", this.$refs.content);
+    },
+    updated(){
+        console.log("updated => ", this.$refs.content);
+    }
+}
+</script>
+```
+- handelDblClick 내에서 focus함수를 실행시킬 때 이벤트의 대상이 될 $refs.content가 감지되지 않는다는 것을 알 수 있음
+- 이는 isEditind 값의 변경으로 인한 Vue의 재렌더링이 아직 진행중이라 $refs.content라는 값이 없다는 것을 의미
+- DOM업데이트 하기 직전인 beforeUpdate에서도 마찬가지
+- updated에서는 DOM 감지됨
+- --> 데이터의 변경에 따른 컴포넌트 재렌더링 순서가 보장되지 않는다는 것을 알 수 있음.
+#### nextTick
+- 위 상황에서 nextTick을 이용하면 우회할 수 있음
+```js
+handleDblClick(){
+  this.isEditing = true;
+  //content에 focus 이벤트를 추가하기
+  this.$nextTick(()=>{
+    console.log("handleDbClick =>", this.$refs.content);
+   this.$refs.content.focus();
+  });
+}
+```
+- callback함수 $nextTick()을 통해 DOM을 조작하게 되면
+- Data 갱신 후 렌더링까지 완료한 후 내부 로직을 수행. 또한 await/async을 활용할 수도 있다.
