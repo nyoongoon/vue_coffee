@@ -1869,3 +1869,8 @@ handleDblClick(){
 ```
 - callback함수 $nextTick()을 통해 DOM을 조작하게 되면
 - Data 갱신 후 렌더링까지 완료한 후 내부 로직을 수행. 또한 await/async을 활용할 수도 있다.
+
+# RESTful API
+- RESTful API란 엔드포인트가 어떠한 특정 상태를 가진 자원을 의미할 수 있도록 설계된 API를 의미.
+## 자원의 상태란?
+- 
