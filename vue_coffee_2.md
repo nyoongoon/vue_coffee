@@ -123,3 +123,69 @@ let number = 10 * 2; // 이 선언문은 10 * 2라는 표현식을 포함하고 
 number = 1; //할당문은 표현식 그 자체이지만 그와 동시에 완전한 하나의 문이기도 함.
 
 ```
+
+
+
+# axios 옵션
+- validateStatus 서버에서 보내준 응답의 HTTP 상태 코드 중 어떤 것을 성공으로 처리할 것인지를 정의 
+- 기본은 200이상 300 미만, 성공하면 axios.then, 실패하면 axios.catch
+```js
+validateStatus(status) {
+    return status >= 200 && status < 300;
+}
+``` 
+### axios의 HTTP 응답 핸들링하기 
+- axios는 http 응답을 자체적으로 한 번 가공하여 사용하기 편하게 만들어주며, 성공 또는 실패여부와 관계 없이 항상 같은 구조의 응답을 반환해줌.
+```js
+{
+    // 'data'는 서버에서 응답에 실어 보낸 HTTP 본문에 있는 데이터를 의미
+    data: {},
+    
+    // 'status'는 서버 응답의 HTTP 상태 코드를 의미함.
+    status: 200,
+    
+    // 'statusText'는 서버 응답의 HTTP 상태의 메시지를 의미함.
+    stastusText: 'OK',
+        
+    // 'config'는 Axios가 서버로 요청을 보냈을 때 어떤 설정을 가지고 있었는지를 의미 <<-- 서버가 아닌 요청의 설정인 것 주의 !
+    config: {},
+        
+    // 'request'는 현재 응답을 받기 위해 서버로 보낸 요청에 대한 데이터
+    request: {},
+}
+```
+- 요청에 성공했다면 axios.then 함수를 사용하여 이 응답을 확인하고 제어할 수 있음
+```js
+axios.get('/users/1/memos')
+    .then(response=>{
+        console.log(response.data);
+        console.log(response.status);
+        console.log(response.statusText);
+        console.log(response.config);
+        console.log(response.requset);
+    })
+```
+- 반대로 요청이 실패로 끝났을 때 Axios는 Promise.reject를 반환하게 되고, 우리는 axios.catch를 사용하여 에러를 핸들링 할 수 있음
+```js
+// axios 에러 핸들링 예시
+axios.get('/users/1/memos')
+    .then(response => { /* ... */ })
+    .catch(error => {
+      if(error.response){
+          //응답이 실패로 처리되었을 때는 error 객체에 resonse 속성이 들어있음
+          //error.response의 속성은 성공 시의 response 응답과 같은 구조.
+          console.log(response.data);
+          console.log(response.status);
+          console.log(response.statusText);  
+      }else if(error.request){
+          // 실패로 처리가 아닌, 아무 응답이 없는 경우엔 response 속성이 들어있지 않음.
+          console.log(error.request)
+      }else{
+          // 어떤 이유인지 모르지만 에러가 발생한 경우의 핸들링
+          console.log('Error', error.message);
+      }
+    });
+```
+
+# RESTful API 확인하기
+- 
