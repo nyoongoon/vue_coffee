@@ -16,6 +16,7 @@
 import axios from 'axios';
 import MemoForm from "./MemoForm";
 import Memo from "./Memo";
+import {mapActions, mapState} from 'vuex';
 
 const memoAPICore = axios.create({
   baseURL: 'http://localhost:8000/api/memos'
@@ -23,22 +24,22 @@ const memoAPICore = axios.create({
 
 export default {
   name: "MemoApp",
-  data() {
-    return {
-      memos: [],
-    };
+  computed:{
+    ...mapState([
+      'memos'
+    ])
   },
   created() {
     //this.memos = localStorage.memos ? JSON.parse(localStorage.memos) : [];
-    memoAPICore.get('/')
-      .then(res=>{
-        this.memos = res.data;
-      })
+   this.fetchMemos();
   },
   components: {
     MemoForm, Memo
   },
   methods: {
+    ...mapActions([
+      'fetchMemos'
+    ]),
     updateMemo(payload){
       const {id, content} = payload;
       const targetIndex = this.memos.findIndex(v => v.id ===id );

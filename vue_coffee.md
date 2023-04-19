@@ -1877,3 +1877,81 @@ handleDblClick(){
 
 
 
+
+# Vuex
+## index.js
+- index.js 파일에 애플리케이션 내에서 Vuex 라이브러리를 사용할 수 있도록 등록해준다.
+```js
+Vue.use(Vuex);
+
+export default new Vuex.Store({
+  state,
+  getters,
+  mutations,
+  actions
+});
+```
+- 위에서 생성한 Vuex Store를 애플리케이션의 엔트리 파일인 main.js에 추가해준다.
+- 해당 디렉터리 경로까지만 적어주면 그 디렉터리 내에 있는 index.js 파일을 찾아서 불러옴.
+```js
+// src/main.js
+import Vue from 'vue'
+import App from './App.vue'
+import store from './store'; //-> index.js를 찾음
+
+new Vue({
+    el: '#app',
+    store,
+    render: h=> h(App)
+});
+```
+## 상태 정의
+- 먼저 애플리케이션을 위한 상태를 정의
+```js
+export default{
+    memos: []
+}
+```
+## 상태 데이터 저장
+- 앞서 MemoApp 컴포너트의 created 훅에서 실행되고 있는 API호출과 동일한 코드를 actions.js에도 작성해줌
+- 액션을 사용할 때는 API 응답 내의 메모 데이터를 commit 메소드를 통해 변이시켜야함. 
+- 스토어의 상태 직접 변경 X
+```js
+// src/store/actions.
+import axios from 'axios';
+
+const memoAPICore = axios.create({
+  baseURL: 'http://localhost:8000/api/memos'
+})
+
+export function fetchMemos({ commit }){
+  memoAPICore.get('/')
+    .then(res => {
+      // API 호출 결과의 데이터와 함꼐 mutations의 커밋을 함
+      commit('FETCH_MEMOS', res.data);
+    })
+}
+
+export default{
+  fetchMemos
+}
+```
+## actions서 커밋한 타입과 일치하는 함수를 mutations에 작성
+- Flux 패턴에서 변이 이름을 상수로 사용하는 것이 일반적
+```js
+// src/store/mutations.js
+const FETCH_MEMOS = 'FETCH_MEMOS';
+
+export default {
+  // 2. FETCH_MEMOS 변수를 변이 이름으로 가지는 변이 함수를 작성함
+  [FETCH_MEMOS] (state, payload){
+    state.memos = payload;
+  }
+}
+```
+### 변이 이름 상수
+- 액션 내 함수에서 호출한 commit 메소드의 첫번째 인자값과 변이의 이름이 일치
+- -> 이러한 변이 이름 상수는 한 곳에서 통합적으로 관리하기 위해 별도의 파일을 만들어 관리하는 것이 좋음
+- 다른 곳에서도 mutations-types.js에 선언된 해당 변이 타입을 이용하는 형태의 함수로 수정.
+
+## 작성한 스토어 컴포넌트 내에서 호출
