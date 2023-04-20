@@ -1,4 +1,4 @@
-// stc/store/states.js
+// src/store/states.js
 export default{
   memos: []
 }

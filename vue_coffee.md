@@ -1905,14 +1905,15 @@ new Vue({
     render: h=> h(App)
 });
 ```
-## 상태 정의
+## 상태 정의 - 데이터 선언, 초기화의 개념
 - 먼저 애플리케이션을 위한 상태를 정의
 ```js
 export default{
     memos: []
 }
 ```
-## 상태 데이터 저장
+## 상태 데이터 저장하기
+### 액션 : 컨트롤러처럼 요청이 시작되는 곳 정의 (컴포넌트 내에서 호출)
 - 앞서 MemoApp 컴포너트의 created 훅에서 실행되고 있는 API호출과 동일한 코드를 actions.js에도 작성해줌
 - 액션을 사용할 때는 API 응답 내의 메모 데이터를 commit 메소드를 통해 변이시켜야함. 
 - 스토어의 상태 직접 변경 X
@@ -1933,10 +1934,11 @@ export function fetchMemos({ commit }){
 }
 
 export default{
-  fetchMemos
+  fetchMemos //액션 함수 export
 }
 ```
-## actions서 커밋한 타입과 일치하는 함수를 mutations에 작성
+### 변이 : 상태가 어떻게 변할지에 대한 정의
+### actions서 커밋한 타입과 일치하는 함수를 mutations에 작성
 - Flux 패턴에서 변이 이름을 상수로 사용하는 것이 일반적
 ```js
 // src/store/mutations.js
@@ -1954,4 +1956,32 @@ export default {
 - -> 이러한 변이 이름 상수는 한 곳에서 통합적으로 관리하기 위해 별도의 파일을 만들어 관리하는 것이 좋음
 - 다른 곳에서도 mutations-types.js에 선언된 해당 변이 타입을 이용하는 형태의 함수로 수정.
 
-## 작성한 스토어 컴포넌트 내에서 호출
+## 작성한 스토어를 컴포넌트 내에서 호출 (액션 호출) 
+```js
+import {mapActions} from 'vuex'; // 1. 헬퍼 함수 가져오기
+
+export default {
+    name: 'MemoApp',
+    created() {
+        this.fetchMemos(); // 주입된 액션 함수 호출
+    },
+    methods: {
+        // 2. mapActions 헬퍼 함수에 사용할 actions함수를 인스턴스의 메소드에 주입
+        ...mapActions([
+            'fetchMemos'
+        ])
+    }
+}
+```
+## 변화된 상태 데이터 사용하기
+```js
+import {mapActions, mapState} from 'vuex';
+export default{
+    name: 'MemoApp',
+    computed: { // mapState 헬퍼함수에 사용할 상태를 computed에 주입
+        ...mapState([
+            'memos'
+        ])
+    }
+}
+```

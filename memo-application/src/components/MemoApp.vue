@@ -23,7 +23,7 @@ const memoAPICore = axios.create({
 })
 
 export default {
-  name: "MemoApp",
+  name: 'MemoApp',
   computed:{
     ...mapState([
       'memos'
@@ -38,7 +38,8 @@ export default {
   },
   methods: {
     ...mapActions([
-      'fetchMemos'
+      'fetchMemos',
+      'addMemo'
     ]),
     updateMemo(payload){
       const {id, content} = payload;
