@@ -1985,3 +1985,36 @@ export default{
     }
 }
 ```
+## getter 사용하기
+- 상태가 중앙 저장소인 스토어에서 관리됨에 따라 컴포넌트의 개수나 컴포넌트의 트리의 깊이에 상관없이 각 컴포넌트들 간의 상태 공유가 월활해짐
+- -> 메모 데이터 개수를 AppHeader 컴포넌트에 노출할 수 있는 방법은 2가지.
+### 1. mapState 헬퍼 함수를 이용하여 직접 스토어의 상태를 가져온 후 노출
+```js
+computed: {
+    getMemoCount() {
+      return this.memos.length;
+    },
+    ...mapState([
+      'memos'
+    ])
+}
+```
+- 상태에 접근할 때마다 재작성 해주어야함 -> 스토어에 게터 선언해두고 mapGetters 헬퍼 함수를 이용하여 사용하는 방식디 더 효율적
+```js
+export function getMemoCount(state){
+    return state.memos.length;
+}
+export default{
+    getMemoCount
+}
+```
+
+## 예측 가능한 애플리케이션 만들기
+### 어떤 메모가 수정 중인지 확인할 수 있을까?
+```js
+// src/store/states.js
+export default{
+    memos: [],
+    editingId: 0
+}
+```
