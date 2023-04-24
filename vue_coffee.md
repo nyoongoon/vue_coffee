@@ -2011,6 +2011,7 @@ export default{
 
 ## 예측 가능한 애플리케이션 만들기
 ### 어떤 메모가 수정 중인지 확인할 수 있을까?
+- 수정 중인 메모의 ID를 저장할 데이터를 추가
 ```js
 // src/store/states.js
 export default{
@@ -2018,3 +2019,17 @@ export default{
     editingId: 0
 }
 ```
+- 수정중인 메모의 ID 값을 설정하는 변이와 설정된 ID값을 해제해주는 변이에 대한 타입과 변이 함수를 추가
+```js
+export const SET_EDITING_ID = 'SET_EDITING_ID';
+export const RESET_EDITING_ID = 'RESET_EDITING_ID';
+```
+```js
+[SET_EDITING_ID](state, id){
+state.editingId = id;
+},
+[RESET_EDITING_ID](state){
+state.editingId = 0;
+}
+```
+- 기존 Memo 컴포넌트 내에 데이터를 통해 관리한 것을 store의 editingId로 관리
