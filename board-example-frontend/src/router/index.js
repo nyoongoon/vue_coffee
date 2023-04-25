@@ -1,15 +1,17 @@
 import Vue from 'vue'
 import Router from 'vue-router'
-import HelloWorld from '@/components/HelloWorld'
+import PostListPage from "@/pages/PostListPage.vue";
 
 Vue.use(Router)
 
 export default new Router({
+  mode: 'history',
   routes: [
+    // 라우터가 히스토리 모드로 작동하도록 설정
     {
       path: '/',
-      name: 'HelloWorld',
-      component: HelloWorld
+      name: 'PostListPage',
+      component: PostListPage
     }
   ]
 })

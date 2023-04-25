@@ -2039,4 +2039,56 @@ state.editingId = 0;
 - Vue Router의 네비게이션 가드 내에서 게시물을 작성한 사용자와 현재 로그인되어 있는 사용자의 아이디를 비교하면 간단하게 방어할 수 있음.
 ## 프로젝트 생성
 - vue CLI에서 webpack-simple이 아닌 "webpack" 옵션 선택
-- 
+
+## 커뮤니티 게시글 읽기 기능 구현하기
+- 라우터 설정 -> 라우터가 히스토리 모드로 작동하도록 설정 
+
+## 페이지 컴포넌트와 리스트 컴포넌트를 분리
+- FIRST 원칙 중 단일 책임 원칙에서 작은 단위의 모듈을 만들어 조립하는 형태로 만들면 유연하게 개발 가능
+- 관심사에 따라 작은 단위의 컴포넌트로 나누어서 설계하면 재사용 측면에서도 큰 효과를 가져옴
+- ex
+```
+- 게시물 리스트 페이지 : PostList + PostListPage
+- 게시물 리스트 모달 : PostList + Modal
+- 다른 페이지에 게시물 리스트 조회 기능이 추가될 경우 : PostList + ExamplePage
+```
+## API 모듈을 분리
+```js
+import axios from 'axios'
+
+export default axios.create({
+  baseURL: '//localhost:8000/api'
+})
+```
+- Axios 라이브러리를 가져온 후 Axios의 인스턴스에 create 메소드를 이용하여 기본이 되는 값들을 설정한 후 다시 외부로 내보내는 모듈
+- 위와같이 애플리케이션 내에서 사용할 Axios 객체에 대해서 한 군데에서 관리하며 사용한다면
+- 엔드포인트의 호스트를 비즈니스 로직 내에서 작성할 필요가 없고 API호출에 대한 공통 로직을 사용하는 모든 부분에 작성 필요 X
+- ex) 에러 트래킹 로직을 추가한다고 하면 아래 처럼 공통 로직으로 관리 가능
+```js
+import axios from 'axios';
+const api = axios.create({
+    baseURL: '//localhost:8000/api'
+});
+api.intercepters.response.use(function(response){
+    return response;
+}, function (error){
+    // 에러 트래킹을 위한 함수 호출
+    sendErrorReport(error);
+    return Promise.reject(error);
+})
+export default api;
+```
+
+## 커뮤니티 게시물 데이터를 스토어로 옮기기.
+- 스토어레 필요한 파일을 모두 생성하고 기본적인 코드를 작성
+- -> Vuex의 인스턴스(main.js)를 애플리케이션의 Vue 인스턴스에 store옵션을 통해 주입함
+```js
+import store from './store'
+
+new Vue({
+    //...
+    store,
+    //...
+})
+```
+- 상태 작성 -> 변이(+변이상수) 작성 -> 액션 작성 -> 컴포넌트내에서 액션함수 호출(헬퍼함수 사용) -> mapState헬퍼 함수로 스토어의 게시물 상태를 참조
