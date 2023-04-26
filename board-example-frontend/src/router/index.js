@@ -1,6 +1,7 @@
 import Vue from 'vue'
 import Router from 'vue-router'
 import PostListPage from "@/pages/PostListPage.vue";
+import PostViewPage from "@/pages/PostViewPage.vue";
 
 Vue.use(Router)
 
@@ -12,6 +13,11 @@ export default new Router({
       path: '/',
       name: 'PostListPage',
       component: PostListPage
+    },
+    {
+      path: '/post/:postId',
+      name: 'PostViewPage',
+      component: PostViewPage
     }
   ]
 })

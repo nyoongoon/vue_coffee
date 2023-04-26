@@ -7,6 +7,8 @@ import mutations from './mutations.js'
 import actions from './actions.js'
 
 Vue.use(Vuex)
+Vue.config.devtools = true
+
 
 export default new Vuex.Store({
   state,

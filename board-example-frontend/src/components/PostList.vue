@@ -20,8 +20,8 @@
       <tr v-for="post in posts" :key="post.id">
         <td scope="col">{{ post.id }}</td>
         <td scope="col">
-          <router-link to="{name: 'postListPage'}">{{post.title}}</router-link>
-          [{{ post.comments.length}}]
+          <router-link :to="{name: 'PostViewPage', params:{postId:post.id.toString()}}">{{ post.title }}</router-link>
+          [{{ post.comments.length }}]
         </td>
         <td scop="col">{{ post.user.name }}</td>
         <td scope="col">{{ post.createdAt }}</td>

@@ -2091,4 +2091,30 @@ new Vue({
     //...
 })
 ```
-- 상태 작성 -> 변이(+변이상수) 작성 -> 액션 작성 -> 컴포넌트내에서 액션함수 호출(헬퍼함수 사용) -> mapState헬퍼 함수로 스토어의 게시물 상태를 참조
+- 상태 작성 -> 변이(+변이상수) 작성 -> 액션 작성(axios사용) -> 컴포넌트내에서 액션함수 호출(헬퍼함수 사용) -> mapState헬퍼 함수로 스토어의 게시물 상태를 참조
+
+### 에러 발생
+- TypeError: Cannot read properties of undefined (reading 'dispatch')
+- vue2와 vuex 버전 맞추기
+
+## 커뮤니티 게시글 상세보기 페이지 
+- PostViewPage.vue 페이지 컴포넌트 생성
+- PostViewPage를 라우터에 연결 -> path에 동적 변수 포함 유의 !!
+- 라우트의 props 옵션으로 컴포넌트의 props를 통해 라우트의 파라미터에 접근할 수 있음 !
+```
+{
+  path: '/post/:postId',
+  name: 'PostViewPage',
+  component: PostViewPage,
+  props: true // props를 통해 라우트의 파라미터에 접근
+}
+```
+### 게시글 상세보기 페이지를 위한 게시물 상태 선언
+```js
+export default{
+    //...
+    // 상세 보기 페이지를 위한 게시물 상태인 post 추가
+    post: null
+}
+```
+- 
