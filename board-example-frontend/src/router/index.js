@@ -17,7 +17,8 @@ export default new Router({
     {
       path: '/post/:postId',
       name: 'PostViewPage',
-      component: PostViewPage
+      component: PostViewPage,
+      props: true
     }
   ]
 })
