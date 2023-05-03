@@ -2117,4 +2117,35 @@ export default{
     post: null
 }
 ```
-- 
+### props 밸리데이션 추가
+```
+props:{
+    post:{
+      type: Object,
+      required: true,
+      validator(post){ //post props에 대한 밸리데이션
+        const isValidPostId = typeof post.id === 'number'
+        const isValidTitle = !!post.title && post.title.length
+        const isValidContents = post.contents && post.contents.length
+        return isValidPostId && isValidTitle && isValidContents
+      }
+    }
+  }
+```
+- null 역시 Object이므로 타입 검증을 추가, 내부의 특정 키 존재 여부 감지
+
+### 컴포넌트가 post 변수에 접근하려고 할 때 변수가 null이 아니도록 조치하기
+``` vue
+<post-view v-if="post" :post="post"/>
+<p v-else>게시글 불러오는 중...</p>
+```
+- post는 비동기 처리 방식 때문에 예외 처리를 해줘야함.
+
+## 회원가입 페이지 구현
+```
+ <form novalidate>
+```
+- novalidate 속성으로 html5의 자체적인 유효성 검사 x
+
+### 클라이언트 검증 이유
+- 좋은 사용자 경험, 서버 부하 줄임
