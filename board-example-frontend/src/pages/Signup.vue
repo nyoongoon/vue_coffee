@@ -2,19 +2,33 @@
   <div class="sign-up-page">
     <h1>회원가입</h1>
     <signup-form @submit="onSubmit"/>
+    <p>
+      이미 가입하셨나요?
+      <router-link to="{name: 'Signup'}">로그인하러 가기</router-link>
+    </p>
   </div>
-  <p>
-    이미 가입하셨나요?
-    <router-link to="{name: 'Signup'}">로그인하러 가기</router-link>
-  </p>
 </template>
 
 <script>
 import SignupForm from "../components/SignupForm.vue";
+import api from "@/api";
 
 export default {
   name: "Signup",
-  components: {SignupForm}
+  components: {SignupForm},
+  methods: {
+    onSubmit(payload) {
+      const {email, password, name} = payload;
+      api.post('/auth/signup', {name, email, password})
+        .then(res => {
+          alert('회원가입이 완료되었습니다.');
+          this.$router.push('/');
+        })
+        .catch(err => {
+          alert(err.response.data.msg)
+        })
+    }
+  }
 }
 </script>
 
