@@ -23,8 +23,8 @@ export default {
   },
   methods: {
     submit() {
-      const {email, password} = this
-      this.$emit('submit', {email, password})
+      const {email, password} = this;
+      this.$emit('submit', {email, password});
     }
   }
 }

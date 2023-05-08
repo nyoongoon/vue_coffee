@@ -2149,3 +2149,108 @@ props:{
 
 ### 클라이언트 검증 이유
 - 좋은 사용자 경험, 서버 부하 줄임
+
+# jwt
+## 애플리케이션에서 사용자를 인증하는 방법
+- 로그인을 시도했을 때 사용자가 서버에 등록되어 있는 인증된 사용자라면 API서비스는 응답으로 엑세스 토큰을 보내줌
+- 3개의 구분된 필드를 갖고 있음 (헤더, 정보, 서명)
+### 헤더 
+- 토큰의 타입과 암호화 알고리즘의 종류
+### 정보
+- 토큰에 대한 정보. 토큰의 발급일, 토큰 발급자등의 정보를 갖고 있음
+### 서명
+- 서명은 토큰의 헤더와 정보를 합친 후 서버만 알고 있는 비밀키를 사용하여 암호화한 정보.
+- 서버는 토큰을 받으면 서명을 검토한 후 해당 토큰의 유효성을 검사.
+## HTTP 헤더
+- 인증정보가 담기는 곳
+```http request
+GET http://localhost:8080/api/contents
+HOST: localhost
+Accept: application/json, text/plain, */*
+Accept-Language: en, ko; q=0.9, *; q=0.1
+Authorization: Bearer @@@... # 인증정보가 이곳에 담김
+```
+- 클라이언트가 Authorization 필드에 토큰 값을 추가하면 서버에서 요청을 받았을때 토큰 내용을 읽음
+
+### cf) 토큰 vs 세션
+- 세션 기반 인증은 서버는 고유한 ID를 생성하여 서버에 저장하고 이 ID를 클라이언트의 쿠키에 저장함
+- 이후 클라이언트가 서버로 요청을 보내면 HTTP 헤더에 쿠키 정보가 함께 포함되어 전송됨
+
+## HTTP 헤더에 토큰 등록하기
+- 서버로부터 받은 토큰을 HTTP 메시지의 헤더에 토큰으로 등록해야함.
+```js
+onSubmit(payload) {
+  // /auth/signin 엔드포인트로 사용자가 입력한 email, password 값 보내기
+  const {email, password} = payload;
+  api.post('/auth/signin', {email, password})
+    .then(res => {
+      const { accessToken } = res.data;
+      api.defaults.headers.common.Authorization = `Bearer ${accessToken}`;
+      alert('로그인이 완료되었습니다.');
+      this.$router.push({name: 'PostListPage'})
+    });
+}
+```
+- axios의 defaults 속성에는 Axios에서 사용되는 옵션의 기본값들이 들어있음.
+- defaults.headers.common 필드는 이 Axios 객체에서 어떤 메소든지 상관없이 헤더에 이 값을 사용한다는 것을 의미함.
+- 만약에 defaults.headers.get으로 접근하여 값을 부여한다면 Axios 객체는 GET 메소드를 사용할때만 그 헤더를 사용함.
+
+## 로그인 로직을 스토어로 옮기기
+- http 헤더에 토큰을 담았다면 애플리케이션의 상태는 인증된 상태가 됨.
+- 대부분의 애플리케이션 인증된 상태와 인증되지 않는 상태를 구분하는 경우가 많은데, 
+- 구분값을 컴포넌트마다 따로 갖고 있으면 전체 애플리케이션의 통일된 상태를 공유하기 어려움
+- -> 인증 상태에 대한 일관성을 위해 인증 상태를 스토어로 옮기기
+- cf) 다른 컴포넌트에서도 로그인 기능 사용하고 싶다면 Vuex의 액션과 변이를 사용하여 
+- 여러 컴포넌트가 공통으로 사용할 수 있게 재사용성 높일 수 있음.
+
+### 스토어 상태에 accessToken 추가
+- 스토어 state에 토큰 유무로 인증 상태를 구분.
+- 먼저 states.js에 초기값 추가
+```js
+// src/store/states.js
+export default{
+    //...
+    accessToken: ''
+}
+```
+### 변이 추가
+```js
+export default {
+  [SET_ACCESS_TOKEN](state, accessToken){
+    // 스토어 상태의 토큰일 업데이트하고
+    // api 모듈을 사용하여 HTTP 헤더에 토큰을 심어줌
+    if(accessToken){
+      state.accessToken = accessToken;
+      api.defaults.headers.common.Authorization = `Bearer ${accessToken}`;
+    }
+  }
+}
+```
+### 액션 추가
+- 비동기적인 이슈를 처리하기 위해 
+- 액션 핸들러는 서버와 통신하여 **데이터를 받아오고 난 후 변이를 요청**하는 commit 메소드를 호출
+```js
+export function signin({commit}, payload) {
+  //1. Signin 컴포넌트의 onSubmit 에소드의 내용을 그대로 작성
+  const {email, password} = payload;
+  return api.post('/auth/signin',{email, password})
+    .then(res=>{
+      const{accessToken} = res.data;
+      commit(SET_ACCESS_TOKEN, accessToken);
+    });
+}
+```
+### Signin 컴포넌트의 onSubmit 메소드가 signin 액션으로 대체된 모습
+```js
+ methods: {
+    ...mapActions([ "signin" ]),
+    onSubmit(payload) {
+      this.signin(payload)
+        .then(res=>{
+          alert('로그인이 완료되었습니다.')
+          this.$router.push({name: 'PostListPage'})
+        })
+        .catch(err.response.data.msg)
+    }
+  }
+```
