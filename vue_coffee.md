@@ -1829,6 +1829,13 @@ methods: {
 ```
 - v-on 디렉티브를 이용하여 자식 컴포넌트인 MemoForm 컴포넌트의 addMemo이벤트 콜백함수로 연결
 
+### 컴포넌트 삭제
+- 컴포넌트를 삭제하려면 id를 식별하려 어떤 데이터를 삭제하려고 하는지 명확하게 알 수 있어야함.
+- 삭제 버튼의 클릭 이벤트 리스너로 삭제 함수 등록하여 id값과 이벤트 올려주기
+#### 부모 컴포넌트로 행위 위임 ($emit()->이벤트를 통한 데이터만 전달)
+- 메모 데이터 생성하는 MemoForm 컴포넌트와 마찬가지로
+- -> Memo컴포넌트도 직접 삭제를 하지 않고, 부모에게 책임을 위임하되, 인자로 ID 값을 전달
+- 
 ### 컴포넌트 업데이트
 ```vue
 <script>
@@ -1872,5 +1879,125 @@ handleDblClick(){
 
 # RESTful API
 - RESTful API란 엔드포인트가 어떠한 특정 상태를 가진 자원을 의미할 수 있도록 설계된 API를 의미.
-## 자원의 상태란?
-- 
+
+## Axios 란?
+- axios 메소드들은 모두 Promise 객체를 반환하며 then과 catch 체인을 사용하여 이후 동작을 제어할 수 있음.
+- async/await 구문을 사용해서 작성할 수도 있음
+```js
+import axois from 'axios';
+axios.get('https://api.example.com/user/1/memos')
+    .then(response => {
+        alert('요청이 성공하였습니다.')
+    })
+    .catch(error => {
+        alert('요청이 실패하였습니다.');
+    })
+    .then(response => {
+        alert('이 블록은 항상 실행됩니다,');
+    });
+```
+
+### 옵션을 사용하여 Axios 사용하기
+#### 옵션 사용방법 2가지
+1. Axios 모듈의 defaults 키를 사용하여 옵션을 적용할 수 있다.
+2. Axios를 초기화하는 시점에 create 메소드를 사용해 옵션을 적용할 수 있다.
+3. Axios의 메소드를 사용하는 시점에 옵션을 적용할 수 있다.
+##### 1 - Axios모듈의 defaults키를 사용하여 기본 옵션값을 설정
+```js
+import axios from 'axios';
+
+axios.defaults.baseURL = 'https://api.example.com';
+axios.defaults.headers.common['X-Example-Key'] = 'example';
+axios.defaults.headers.post['Content-Type'] = 'application/json';
+axios.get('/users/1/memos');
+```
+- 이 방법은 API서버에 호스트를 반복적으로 입력하는 상황이나
+- 요청시 HTTP 헤더에 특정 값을 반복적으로 넣어주는 상황
+- 하지만 상황에 따라 다른값들을 사용해야한다면 2번 방법을 사용.
+##### 2 - axios.create 메소드를 사용하여 새로운 Axios 객체를 만들어 사용
+```js
+import axios from 'axios';
+
+const AuthAPI = axios.create({
+   baseURL: 'https://api.auth.com' 
+});
+const UserAPI = axios.create({
+    baseURL: 'https://api.users.com'
+});
+```
+- MSA를 사용하고 있는 구조에 적합함
+
+##### 3 - Axios 메소드 사용시마다 옵션 직접 주입
+```js
+// axois.post(url, data?, config?)
+import axois from 'axios';
+axios.post('/users/1/memos', {
+    title: '메모 기록',
+    content: '메모의 내용입니다.',
+}, {
+   headers:{ 'Content-Type': 'application/json'}
+});
+```
+- 직관적이나 반복적으로 값을 입력해줘야함
+
+#### Axios의 다양한 옵션 종류
+```js
+{
+    // 요청을 보내고자하는 URL
+    url: '/users/1/memos',
+        
+    // 'baseURL 옵션 값은 입력된 URL의 앞쪽에 붙게된다.'
+    baseURL: 'https://api.example.com',
+        
+    // 'transformRequest' 옵션을 사용하여 요청을 서버로 보내기 전 데이터를 가공할 수 있음.
+    // 배열로 되어있기 때문에 여러 개의 함수를 사용할 수 있음.
+    transformRequest: [function(date, headers){
+        return data;
+    }],
+        
+    //'transformResponse' 옵션을 사용하여 서버에서 보내준 응답을 사용하기 전에 데이터를 가공 할 수 있음
+   transformResponse: [function(data){
+        return data;
+   }], 
+        
+    // 'headers' 옵션을 사용하여 커스터마이징된 값을 HTTP 헤더에 담을 수 있음.
+    headers: {'X-Custon-Value' : 'example'},
+    
+    //'params' 옵션을 사용하여 URL에 쿼리스트링 인자를 사용할 수 있음.
+    params: { id: 1 }, //?id=1로 변환되어 URL 맨 뒤에 붙여짐
+    
+    // 'paramsSerializer' 옵션을 사용하여 params옵션에서 받아들인 인자를 가공할 방법을 커스터마이징할 수 있음.
+    paramSerializer(params){
+        return qs.stringify(params, {arrayFormat: 'brackets'});
+    },
+    
+    // 'data' 옵션을 사용하여 요청을 보낼 때 HTTP 바디에 데이터를 담을수 있음
+    data: {
+        title: '메모입니다',
+        content: '메모의 내용입니다'
+    },
+    
+    // 'timeout' 옵션은 요청을 생성한 뒤 얼마나 오래 기다릴 것인지를 정의함.
+    timeout: 1000,
+        
+    // 'withCredentials' 옵션은 서버로 보낼 요청의 Access-Contrl 사용 여부를 나타냄
+    // 해당 값이 true 라면, 브라우저는 Access-Control-Allow-Credentials: true 헤더를 갖지 않은 서버 응답 모두 거절
+    withCredentials: false,
+        
+    // 'responseType' 옵션은 HTTP 응답의 자료형을 정의
+    responseType: 'json',
+        
+    // 'responseEncoding' 옵션은 응답의 인코딩 형식을 정의
+    // 옵션이 stream일 경우 이 옵션은 무시됨
+    responseEncoding: 'utf8',
+        
+    // 'xsrfCookieName' 옵션은 XSRF 토큰을 담고 있는 쿠키의 이름을 의미
+    xsrfCookieName: 'XSRF-TOKEN',
+        
+    // 'xsrfHeaderName' 옵션은 XSRF토큰을 요청 헤더에 담아 보낼 때의 키 값.
+   xsrfHeaderName: 'X-XSRF-TOKEN',
+   
+   // 'maxContentLength' 옵션은 HTTP 응답의 최대 크기를 정의(byte)
+    maxContentLength: 2000,
+}
+```
