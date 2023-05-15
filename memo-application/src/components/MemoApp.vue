@@ -7,51 +7,50 @@
             :key="memo.id"
             :memo="memo"
             @deleteMemo ="deleteMemo"
-            @updateMemo="updateMemo" />
+            @updateMemo="updateMemo"
+            :editing-id="editingId"
+            @setEditingId="SET_EDITING_ID"
+            @resetEditingId="RESET_EDITING_ID"/>
     </ul>
   </div>
 </template>
 
 <script>
+import axios from 'axios';
 import MemoForm from "./MemoForm";
 import Memo from "./Memo";
+import {mapActions, mapState, mapMutations} from 'vuex';
+import {RESET_EDITING_ID, SET_EDITING_ID} from "../store/mutations-types";
+
+const memoAPICore = axios.create({
+  baseURL: 'http://localhost:8000/api/memos'
+})
 
 export default {
-  name: "MemoApp",
-  data() {
-    return {
-      memos: [],
-    };
+  name: 'MemoApp',
+  computed:{
+    ...mapState([
+      'memos',
+      'editingId'
+    ])
   },
   created() {
-    this.memos = localStorage.memos ? JSON.parse(localStorage.memos) : [];
+   this.fetchMemos();
   },
   components: {
     MemoForm, Memo
   },
   methods: {
-    updateMemo(payload){
-      const {id, content} = payload;
-      const targetIndex = this.memos.findIndex(v => v.id ===id );
-      const targetMemo = this.memos[targetIndex];
-      this.memos.splice(targetIndex, 1, {...targetMemo, content});
-      this.storeMemo();
-    },
-    deleteMemo(id){
-      const targetIndex = this.memos.findIndex(v => v.id === id);
-      this.memos.splice(targetIndex, 1);
-      this.storeMemo();
-    },
-    addMemo(payload) {
-      // MemoForm에서 올려받은 데이터를 먼저 컴포넌트 내부데이터에 추가
-      this.memos.push(payload);
-      // 내부 데이터를 문자열로 변환 후, 로컬 스토리지에 저장
-      this.storeMemo();
-    },
-    storeMemo() {
-      const memosToString = JSON.stringify(this.memos);
-      localStorage.setItem('memos', memosToString);
-    }
+    ...mapActions([
+      'fetchMemos',
+      'addMemo',
+      'deleteMemo',
+      'updateMemo'
+    ]),
+    ...mapMutations([
+      SET_EDITING_ID,
+      RESET_EDITING_ID
+    ])
   }
 }
 </script>

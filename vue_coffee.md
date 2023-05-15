@@ -1879,6 +1879,7 @@ handleDblClick(){
 
 # RESTful API
 - RESTful API란 엔드포인트가 어떠한 특정 상태를 가진 자원을 의미할 수 있도록 설계된 API를 의미.
+<<<<<<< HEAD
 
 ## Axios 란?
 - axios 메소드들은 모두 Promise 객체를 반환하며 then과 catch 체인을 사용하여 이후 동작을 제어할 수 있음.
@@ -2000,4 +2001,387 @@ axios.post('/users/1/memos', {
    // 'maxContentLength' 옵션은 HTTP 응답의 최대 크기를 정의(byte)
     maxContentLength: 2000,
 }
+=======
+## 자원의 상태란?
+- 
+
+
+
+
+# Vuex
+## index.js
+- index.js 파일에 애플리케이션 내에서 Vuex 라이브러리를 사용할 수 있도록 등록해준다.
+```js
+Vue.use(Vuex);
+
+export default new Vuex.Store({
+  state,
+  getters,
+  mutations,
+  actions
+});
+```
+- 위에서 생성한 Vuex Store를 애플리케이션의 엔트리 파일인 main.js에 추가해준다.
+- 해당 디렉터리 경로까지만 적어주면 그 디렉터리 내에 있는 index.js 파일을 찾아서 불러옴.
+```js
+// src/main.js
+import Vue from 'vue'
+import App from './App.vue'
+import store from './store'; //-> index.js를 찾음
+
+new Vue({
+    el: '#app',
+    store,
+    render: h=> h(App)
+});
+```
+## 상태 정의 - 데이터 선언, 초기화의 개념
+- 먼저 애플리케이션을 위한 상태를 정의
+```js
+export default{
+    memos: []
+}
+```
+## 상태 데이터 저장하기
+### 액션 : 컨트롤러처럼 요청이 시작되는 곳 정의 (컴포넌트 내에서 호출)
+- 앞서 MemoApp 컴포너트의 created 훅에서 실행되고 있는 API호출과 동일한 코드를 actions.js에도 작성해줌
+- 액션을 사용할 때는 API 응답 내의 메모 데이터를 commit 메소드를 통해 변이시켜야함. 
+- 스토어의 상태 직접 변경 X
+```js
+// src/store/actions.
+import axios from 'axios';
+
+const memoAPICore = axios.create({
+  baseURL: 'http://localhost:8000/api/memos'
+})
+
+export function fetchMemos({ commit }){
+  memoAPICore.get('/')
+    .then(res => {
+      // API 호출 결과의 데이터와 함꼐 mutations의 커밋을 함
+      commit('FETCH_MEMOS', res.data);
+    })
+}
+
+export default{
+  fetchMemos //액션 함수 export
+}
+```
+### 변이 : 상태가 어떻게 변할지에 대한 정의
+### actions서 커밋한 타입과 일치하는 함수를 mutations에 작성
+- Flux 패턴에서 변이 이름을 상수로 사용하는 것이 일반적
+```js
+// src/store/mutations.js
+const FETCH_MEMOS = 'FETCH_MEMOS';
+
+export default {
+  // 2. FETCH_MEMOS 변수를 변이 이름으로 가지는 변이 함수를 작성함
+  [FETCH_MEMOS] (state, payload){
+    state.memos = payload;
+  }
+}
+```
+### 변이 이름 상수
+- 액션 내 함수에서 호출한 commit 메소드의 첫번째 인자값과 변이의 이름이 일치
+- -> 이러한 변이 이름 상수는 한 곳에서 통합적으로 관리하기 위해 별도의 파일을 만들어 관리하는 것이 좋음
+- 다른 곳에서도 mutations-types.js에 선언된 해당 변이 타입을 이용하는 형태의 함수로 수정.
+
+## 작성한 스토어를 컴포넌트 내에서 호출 (액션 호출) 
+```js
+import {mapActions} from 'vuex'; // 1. 헬퍼 함수 가져오기
+
+export default {
+    name: 'MemoApp',
+    created() {
+        this.fetchMemos(); // 주입된 액션 함수 호출
+    },
+    methods: {
+        // 2. mapActions 헬퍼 함수에 사용할 actions함수를 인스턴스의 메소드에 주입
+        ...mapActions([
+            'fetchMemos'
+        ])
+    }
+}
+```
+## 변화된 상태 데이터 사용하기
+```js
+import {mapActions, mapState} from 'vuex';
+export default{
+    name: 'MemoApp',
+    computed: { // mapState 헬퍼함수에 사용할 상태를 computed에 주입
+        ...mapState([
+            'memos'
+        ])
+    }
+}
+```
+## getter 사용하기
+- 상태가 중앙 저장소인 스토어에서 관리됨에 따라 컴포넌트의 개수나 컴포넌트의 트리의 깊이에 상관없이 각 컴포넌트들 간의 상태 공유가 월활해짐
+- -> 메모 데이터 개수를 AppHeader 컴포넌트에 노출할 수 있는 방법은 2가지.
+### 1. mapState 헬퍼 함수를 이용하여 직접 스토어의 상태를 가져온 후 노출
+```js
+computed: {
+    getMemoCount() {
+      return this.memos.length;
+    },
+    ...mapState([
+      'memos'
+    ])
+}
+```
+- 상태에 접근할 때마다 재작성 해주어야함 -> 스토어에 게터 선언해두고 mapGetters 헬퍼 함수를 이용하여 사용하는 방식디 더 효율적
+```js
+export function getMemoCount(state){
+    return state.memos.length;
+}
+export default{
+    getMemoCount
+}
+```
+
+## 예측 가능한 애플리케이션 만들기
+### 어떤 메모가 수정 중인지 확인할 수 있을까?
+- 수정 중인 메모의 ID를 저장할 데이터를 추가
+```js
+// src/store/states.js
+export default{
+    memos: [],
+    editingId: 0
+}
+```
+- 수정중인 메모의 ID 값을 설정하는 변이와 설정된 ID값을 해제해주는 변이에 대한 타입과 변이 함수를 추가
+```js
+export const SET_EDITING_ID = 'SET_EDITING_ID';
+export const RESET_EDITING_ID = 'RESET_EDITING_ID';
+```
+```js
+[SET_EDITING_ID](state, id){
+state.editingId = id;
+},
+[RESET_EDITING_ID](state){
+state.editingId = 0;
+}
+```
+- 기존 Memo 컴포넌트 내에 데이터를 통해 관리한 것을 store의 editingId로 관리
+
+# 커뮤니티 애플리케이션 만들기
+## 인증 & 인가
+- Vue Router의 네비게이션 가드 내에서 게시물을 작성한 사용자와 현재 로그인되어 있는 사용자의 아이디를 비교하면 간단하게 방어할 수 있음.
+## 프로젝트 생성
+- vue CLI에서 webpack-simple이 아닌 "webpack" 옵션 선택
+
+## 커뮤니티 게시글 읽기 기능 구현하기
+- 라우터 설정 -> 라우터가 히스토리 모드로 작동하도록 설정 
+
+## 페이지 컴포넌트와 리스트 컴포넌트를 분리
+- FIRST 원칙 중 단일 책임 원칙에서 작은 단위의 모듈을 만들어 조립하는 형태로 만들면 유연하게 개발 가능
+- 관심사에 따라 작은 단위의 컴포넌트로 나누어서 설계하면 재사용 측면에서도 큰 효과를 가져옴
+- ex
+```
+- 게시물 리스트 페이지 : PostList + PostListPage
+- 게시물 리스트 모달 : PostList + Modal
+- 다른 페이지에 게시물 리스트 조회 기능이 추가될 경우 : PostList + ExamplePage
+```
+## API 모듈을 분리
+```js
+import axios from 'axios'
+
+export default axios.create({
+  baseURL: '//localhost:8000/api'
+})
+```
+- Axios 라이브러리를 가져온 후 Axios의 인스턴스에 create 메소드를 이용하여 기본이 되는 값들을 설정한 후 다시 외부로 내보내는 모듈
+- 위와같이 애플리케이션 내에서 사용할 Axios 객체에 대해서 한 군데에서 관리하며 사용한다면
+- 엔드포인트의 호스트를 비즈니스 로직 내에서 작성할 필요가 없고 API호출에 대한 공통 로직을 사용하는 모든 부분에 작성 필요 X
+- ex) 에러 트래킹 로직을 추가한다고 하면 아래 처럼 공통 로직으로 관리 가능
+```js
+import axios from 'axios';
+const api = axios.create({
+    baseURL: '//localhost:8000/api'
+});
+api.intercepters.response.use(function(response){
+    return response;
+}, function (error){
+    // 에러 트래킹을 위한 함수 호출
+    sendErrorReport(error);
+    return Promise.reject(error);
+})
+export default api;
+```
+
+## 커뮤니티 게시물 데이터를 스토어로 옮기기.
+- 스토어레 필요한 파일을 모두 생성하고 기본적인 코드를 작성
+- -> Vuex의 인스턴스(main.js)를 애플리케이션의 Vue 인스턴스에 store옵션을 통해 주입함
+```js
+import store from './store'
+
+new Vue({
+    //...
+    store,
+    //...
+})
+```
+- 상태 작성 -> 변이(+변이상수) 작성 -> 액션 작성(axios사용) -> 컴포넌트내에서 액션함수 호출(헬퍼함수 사용) -> mapState헬퍼 함수로 스토어의 게시물 상태를 참조
+
+### 에러 발생
+- TypeError: Cannot read properties of undefined (reading 'dispatch')
+- vue2와 vuex 버전 맞추기
+
+## 커뮤니티 게시글 상세보기 페이지 
+- PostViewPage.vue 페이지 컴포넌트 생성
+- PostViewPage를 라우터에 연결 -> path에 동적 변수 포함 유의 !!
+- 라우트의 props 옵션으로 컴포넌트의 props를 통해 라우트의 파라미터에 접근할 수 있음 !
+```
+{
+  path: '/post/:postId',
+  name: 'PostViewPage',
+  component: PostViewPage,
+  props: true // props를 통해 라우트의 파라미터에 접근
+}
+```
+### 게시글 상세보기 페이지를 위한 게시물 상태 선언
+```js
+export default{
+    //...
+    // 상세 보기 페이지를 위한 게시물 상태인 post 추가
+    post: null
+}
+```
+### props 밸리데이션 추가
+```
+props:{
+    post:{
+      type: Object,
+      required: true,
+      validator(post){ //post props에 대한 밸리데이션
+        const isValidPostId = typeof post.id === 'number'
+        const isValidTitle = !!post.title && post.title.length
+        const isValidContents = post.contents && post.contents.length
+        return isValidPostId && isValidTitle && isValidContents
+      }
+    }
+  }
+```
+- null 역시 Object이므로 타입 검증을 추가, 내부의 특정 키 존재 여부 감지
+
+### 컴포넌트가 post 변수에 접근하려고 할 때 변수가 null이 아니도록 조치하기
+``` vue
+<post-view v-if="post" :post="post"/>
+<p v-else>게시글 불러오는 중...</p>
+```
+- post는 비동기 처리 방식 때문에 예외 처리를 해줘야함.
+
+## 회원가입 페이지 구현
+```
+ <form novalidate>
+```
+- novalidate 속성으로 html5의 자체적인 유효성 검사 x
+
+### 클라이언트 검증 이유
+- 좋은 사용자 경험, 서버 부하 줄임
+
+# jwt
+## 애플리케이션에서 사용자를 인증하는 방법
+- 로그인을 시도했을 때 사용자가 서버에 등록되어 있는 인증된 사용자라면 API서비스는 응답으로 엑세스 토큰을 보내줌
+- 3개의 구분된 필드를 갖고 있음 (헤더, 정보, 서명)
+### 헤더 
+- 토큰의 타입과 암호화 알고리즘의 종류
+### 정보
+- 토큰에 대한 정보. 토큰의 발급일, 토큰 발급자등의 정보를 갖고 있음
+### 서명
+- 서명은 토큰의 헤더와 정보를 합친 후 서버만 알고 있는 비밀키를 사용하여 암호화한 정보.
+- 서버는 토큰을 받으면 서명을 검토한 후 해당 토큰의 유효성을 검사.
+## HTTP 헤더
+- 인증정보가 담기는 곳
+```http request
+GET http://localhost:8080/api/contents
+HOST: localhost
+Accept: application/json, text/plain, */*
+Accept-Language: en, ko; q=0.9, *; q=0.1
+Authorization: Bearer @@@... # 인증정보가 이곳에 담김
+```
+- 클라이언트가 Authorization 필드에 토큰 값을 추가하면 서버에서 요청을 받았을때 토큰 내용을 읽음
+
+### cf) 토큰 vs 세션
+- 세션 기반 인증은 서버는 고유한 ID를 생성하여 서버에 저장하고 이 ID를 클라이언트의 쿠키에 저장함
+- 이후 클라이언트가 서버로 요청을 보내면 HTTP 헤더에 쿠키 정보가 함께 포함되어 전송됨
+
+## HTTP 헤더에 토큰 등록하기
+- 서버로부터 받은 토큰을 HTTP 메시지의 헤더에 토큰으로 등록해야함.
+```js
+onSubmit(payload) {
+  // /auth/signin 엔드포인트로 사용자가 입력한 email, password 값 보내기
+  const {email, password} = payload;
+  api.post('/auth/signin', {email, password})
+    .then(res => {
+      const { accessToken } = res.data;
+      api.defaults.headers.common.Authorization = `Bearer ${accessToken}`;
+      alert('로그인이 완료되었습니다.');
+      this.$router.push({name: 'PostListPage'})
+    });
+}
+```
+- axios의 defaults 속성에는 Axios에서 사용되는 옵션의 기본값들이 들어있음.
+- defaults.headers.common 필드는 이 Axios 객체에서 어떤 메소든지 상관없이 헤더에 이 값을 사용한다는 것을 의미함.
+- 만약에 defaults.headers.get으로 접근하여 값을 부여한다면 Axios 객체는 GET 메소드를 사용할때만 그 헤더를 사용함.
+
+## 로그인 로직을 스토어로 옮기기
+- http 헤더에 토큰을 담았다면 애플리케이션의 상태는 인증된 상태가 됨.
+- 대부분의 애플리케이션 인증된 상태와 인증되지 않는 상태를 구분하는 경우가 많은데, 
+- 구분값을 컴포넌트마다 따로 갖고 있으면 전체 애플리케이션의 통일된 상태를 공유하기 어려움
+- -> 인증 상태에 대한 일관성을 위해 인증 상태를 스토어로 옮기기
+- cf) 다른 컴포넌트에서도 로그인 기능 사용하고 싶다면 Vuex의 액션과 변이를 사용하여 
+- 여러 컴포넌트가 공통으로 사용할 수 있게 재사용성 높일 수 있음.
+
+### 스토어 상태에 accessToken 추가
+- 스토어 state에 토큰 유무로 인증 상태를 구분.
+- 먼저 states.js에 초기값 추가
+```js
+// src/store/states.js
+export default{
+    //...
+    accessToken: ''
+}
+```
+### 변이 추가
+```js
+export default {
+  [SET_ACCESS_TOKEN](state, accessToken){
+    // 스토어 상태의 토큰일 업데이트하고
+    // api 모듈을 사용하여 HTTP 헤더에 토큰을 심어줌
+    if(accessToken){
+      state.accessToken = accessToken;
+      api.defaults.headers.common.Authorization = `Bearer ${accessToken}`;
+    }
+  }
+}
+```
+### 액션 추가
+- 비동기적인 이슈를 처리하기 위해 
+- 액션 핸들러는 서버와 통신하여 **데이터를 받아오고 난 후 변이를 요청**하는 commit 메소드를 호출
+```js
+export function signin({commit}, payload) {
+  //1. Signin 컴포넌트의 onSubmit 에소드의 내용을 그대로 작성
+  const {email, password} = payload;
+  return api.post('/auth/signin',{email, password})
+    .then(res=>{
+      const{accessToken} = res.data;
+      commit(SET_ACCESS_TOKEN, accessToken);
+    });
+}
+```
+### Signin 컴포넌트의 onSubmit 메소드가 signin 액션으로 대체된 모습
+```js
+ methods: {
+    ...mapActions([ "signin" ]),
+    onSubmit(payload) {
+      this.signin(payload)
+        .then(res=>{
+          alert('로그인이 완료되었습니다.')
+          this.$router.push({name: 'PostListPage'})
+        })
+        .catch(err.response.data.msg)
+    }
+  }
+>>>>>>> d9b46c91c7966ffde56bdc412cb0d85d0b6da7b7
 ```

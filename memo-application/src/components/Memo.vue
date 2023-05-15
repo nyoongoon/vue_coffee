@@ -21,19 +21,24 @@ export default {
   props: {
     memo: {
       type: Object
+    },
+    editingId:{
+      type: Number
     }
   },
   methods: {
     handleBlur(){
-      this.isEditing = false;
+      // this.isEditing = false;
+      this.$emit('resetEditingId');
     },
     deleteMemo() {
       const id = this.memo.id;
       this.$emit('deleteMemo', id);
     },
     handleDblClick(){
-      this.isEditing = true;
+      // this.isEditing = true;
       //content에 focus 이벤트를 추가하기
+      this.$emit('setEditingId', this.memo.id)
       this.$nextTick(()=>{
         console.log("handleDbClick =>", this.$refs.content);
        this.$refs.content.focus();
@@ -46,12 +51,13 @@ export default {
         return false;
       }
       this.$emit('updateMemo', {id, content});
-      this.isEditing = false;
+      // this.isEditing = false;
+      this.$refs.content.blur();
     }
   },
-  data(){
-    return {
-      isEditing : false
+  computed:{
+    isEditing(){
+      return this.memo.id == this.editingId;
     }
   },
   beforeUpdate(){

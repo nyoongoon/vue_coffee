@@ -1,6 +1,5 @@
 <template>
   <div id="app">
-
     <router-view/>
   </div>
 </template>
@@ -12,5 +11,5 @@ export default {
 </script>
 
 <style>
-  @import 'http://localhost:8000/assets/index.css';
+@import 'http://localhost:8000/assets/index.css';
 </style>
