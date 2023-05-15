@@ -2383,11 +2383,9 @@ export function signin({commit}, payload) {
         .catch(err.response.data.msg)
     }
   }
-<<<<<<< HEAD
->>>>>>> d9b46c91c7966ffde56bdc412cb0d85d0b6da7b7
+
 ```
-=======
-```
+
 
 ## 저장된 토큰 기반 현재 로그인된 사용자의 정보 가져오기
 - 토큰에 담겨 있는 정보는 토큰 생성 시점 사용자 정보이기 때문에 현재 정보와 동일함 보장 X
@@ -2396,4 +2394,55 @@ export function signin({commit}, payload) {
 - 사용자 정보는 '서버와의 비동기 통신'을 통해 받아오는 정보이기 때문에 변이에서는 해당 작업 수행X
 - 비동기에 대한 처리는 액션에서 수행.
 - 사용자 정보를 받는 작업 또한 로그인 과정으로 생각해 signin 액션에 추가로 작성
->>>>>>> 63b263022bd6a53218a981f96e32bb748658ec8f
+
+### 쿠키에 저장
+- 브라우저 새로고침하면 스토어 초기화됨
+- -> 종료하고 다시 켜도, 일정시간 동안 유지하기 위해서 -> 쿠키 사용
+- 라이브러리 설치
+```
+npm install js-cookie --save
+```
+- 스토어에 토큰 저장할 때 쿠키에도 같이 저장
+- -> 쿠키에 토큰 있다면 자동 로그인하는 로직 작성
+- -> 이미 저장된 토큰을 사용하여 사용자의 정보를 받아오는 로직만 있는 별도의 액션을 작성하기
+- 쿠키에서 토큰을 검사하는 과정을 **애플리케이션 초기화될때 수행하므로 main.js 파일에 작성 !**
+```js
+import Cookies from "js-cookie";
+
+const savedToken = Cookies.get('accessToken')
+if(savedToken){
+  store.dispatch('signinByToken', savedToken);
+}
+new Vue({
+    //...
+})
+```
+
+# 어플리케이션의 헤더 컴포넌트 작성하기
+```vue
+<template>
+  <div id="app">
+    <app-header/>
+    <router-view/>
+  </div>
+</template>
+```
+- 위 방법의 단점은 어느 페이지든 무조건 AppHeader 컴포넌트가 노출됨
+- Vue Router에서 라우트마다 여러개의 RouterView를 사용할수 있도록 
+- -> Named Router View 기능을 제공
+```
+//header라는 이름을 부여받음. 이름없으면 default
+<router-view name="header/>
+```
+- 라우터에서 컴포넌트 속성에 header 정의
+```
+routes:[
+    {
+        //...
+        components:{
+            header:AppHeader,
+            default: PostViewPage,
+        }
+    }
+]
+```

@@ -5,6 +5,13 @@ import App from './App';
 import router from './router';
 import store from './store';
 
+import Cookies from "js-cookie";
+
+const savedToken = Cookies.get('accessToken')
+if(savedToken){
+  store.dispatch('signinByToken', savedToken);
+}
+
 //Vue.config.productionTip = false
 
 /* eslint-disable no-new */
