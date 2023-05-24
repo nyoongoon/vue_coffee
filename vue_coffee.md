@@ -2262,3 +2262,59 @@ export function signin({commit}, payload) {
 - 사용자 정보는 '서버와의 비동기 통신'을 통해 받아오는 정보이기 때문에 변이에서는 해당 작업 수행X
 - 비동기에 대한 처리는 액션에서 수행.
 - 사용자 정보를 받는 작업 또한 로그인 과정으로 생각해 signin 액션에 추가로 작성
+
+
+# 애플리케이션의 헤더 컴포넌트 작성하기
+## Named Router View
+- Vue Router에서는 라우트마다 하나의 RouterView만 사용할 수 있는 것이 아니라
+- 여러개의 RouterView를 사요할 수 있도록 Named Router View라는 기능을 제공하고 있음.
+- App.vue에 Named Router View 사용
+```js
+<template>
+    <div id="app">
+        <router-view name="header"/>
+        <router-view/>
+    </div>
+</template>
+```
+- router/index.js
+```js
+  {
+      path: '/post/:postId',
+      name: 'PostViewPage',
+      components: {
+        header: AppHeader,
+        default: PostViewPage,
+      },
+      props: {
+        // props값 역시 대상 components의 이름으로 수정한다.
+        default: true
+      }
+    },
+    {
+      path: '/signup',
+      name: 'Signup',
+      components: {
+        header: AppHeader,
+        default: Signup
+      }
+    },
+    {
+      path: '/signin',
+      name: 'Signin',
+      // components 속성이 아니라 component 속성을 사용하면 자동으로 이름이 없는 router-view에만 컴포넌트를 렌더
+      component: Signin
+    },
+```
+
+## 헤더 컴포넌트 기능 추가하기
+### 로그인 된 상태 확인할 수 있도록 게터 작성
+```js
+// src/store/getters.js
+export default{
+    isAuthorized(state){
+        return state.accessToken.length > 0 && !! state.me
+    }
+}
+```
+### 로그아웃 기능 추가
