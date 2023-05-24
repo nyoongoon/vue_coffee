@@ -2,7 +2,9 @@ import {
   FETCH_POST_LIST,
   FETCH_POST,
   SET_ACCESS_TOKEN,
-  SET_MY_INFO
+  SET_MY_INFO,
+  DESTORY_ACCESS_TOKEN,
+  DESTORY_MY_INFO
 } from "./mutations-types";
 
 import api from '../api';
@@ -20,11 +22,21 @@ export default {
     if (accessToken) {
       state.accessToken = accessToken;
       api.defaults.headers.common.Authorization = `Bearer ${accessToken}`;
+      Cookies.set('accessToken', accessToken)
     }
   },
   [SET_MY_INFO](state, me){
     if(me){
       state.me = me;
     }
-  }
+  },
+  [DESTORY_ACCESS_TOKEN](state){
+    state.accessToken = '';
+    // delete 주의 !
+    delete api.defaults.headers.common.Authorization;
+    Cookies.remove('accessToken'); //p.352
+  },
+  [DESTORY_MY_INFO](state){
+    state.me = null;
+  },
 };

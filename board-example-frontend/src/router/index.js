@@ -4,6 +4,7 @@ import PostListPage from "@/pages/PostListPage.vue";
 import PostViewPage from "@/pages/PostViewPage.vue";
 import Signup from "@/pages/Signup.vue";
 import Signin from "@/pages/Signin.vue";
+import AppHeader from "../components/AppHeader.vue";
 
 Vue.use(Router);
 
@@ -14,23 +15,33 @@ export default new Router({
     {
       path: '/',
       name: 'PostListPage',
-      component: PostListPage
+      component: PostListPage,
     },
     {
       path: '/post/:postId',
       name: 'PostViewPage',
-      component: PostViewPage,
-      props: true
+      components: {
+        header: AppHeader,
+        default: PostViewPage,
+      },
+      props: {
+        // props값 역시 대상 components의 이름으로 수정한다.
+        default: true
+      }
     },
     {
       path: '/signup',
       name: 'Signup',
-      component: Signup
+      components: {
+        header: AppHeader,
+        default: Signup
+      }
     },
     {
       path: '/signin',
       name: 'Signin',
+      // components 속성이 아니라 component 속성을 사용하면 자동으로 이름이 없는 router-view에만 컴포넌트를 렌더
       component: Signin
-    }
+    },
   ]
 });
