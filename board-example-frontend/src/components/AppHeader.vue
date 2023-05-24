@@ -1,6 +1,7 @@
 <template>
   <div class="app-header">
     <h1>Community</h1>
+<<<<<<< HEAD
     <div v-if="isAuthorized">
       <strong>
         <button @click="toggle"> {{ me.name }}님 환영합니다.</button>
@@ -15,11 +16,16 @@
     </div>
     <div v-else>
       <router-link :to="{ name: 'Signin' }">로그인</router-link>
+=======
+    <div>
+      <router-link :to="{name: 'Signin'}">로그인</router-link>
+>>>>>>> 60fc979658873f5440bff5eaa2b283842df73d67
     </div>
   </div>
 </template>
 
 <script>
+<<<<<<< HEAD
 import {mapGetters, mapState} from 'vuex';
 
 export default {
@@ -38,6 +44,10 @@ export default {
     ...mapGetters(['isAuthorized']),
     ...mapState(['me'])
   }
+=======
+export default {
+  name: "AppHeader"
+>>>>>>> 60fc979658873f5440bff5eaa2b283842df73d67
 }
 </script>
 

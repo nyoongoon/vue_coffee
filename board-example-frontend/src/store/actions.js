@@ -35,8 +35,17 @@ export function signin({commit}, payload) {
     });
 }
 
+export function signinByToken({commit}, token){
+  commit(SET_ACCESS_TOKEN, token);
+  return api.get('/users/me')
+    .then(res => {
+      commit(SET_MY_INFO, res.data);
+    })
+}
+
 export default {
   fetchPostList,
   fetchPost,
-  signin
+  signin,
+  signinByToken
 };

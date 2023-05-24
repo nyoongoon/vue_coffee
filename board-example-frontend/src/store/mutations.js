@@ -8,6 +8,7 @@ import {
 } from "./mutations-types";
 
 import api from '../api';
+import Cookies from 'js-cookie'
 
 export default {
   [FETCH_POST_LIST](state, posts) {
