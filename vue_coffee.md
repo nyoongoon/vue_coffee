@@ -2501,3 +2501,89 @@ routes:[
 ]
 ```
 
+# 로그아웃 기능 만들기
+- mutations.js
+```js
+[DESTORY_ACCESS_TOKEN](state){
+    state.accessToken = '';
+    // delete 주의 !
+    delete api.defaults.headers.common.Authorization;
+    Cookies.remove('accessToken'); //p.352
+  },
+  [DESTORY_MY_INFO](state){
+    state.me = null;
+  },
+```
+- actions.js
+```js
+export function signout({ commit }){
+  commit(DESTORY_MY_INFO);
+  commit(DESTORY_ACCESS_TOKEN);
+}
+```
+
+# 게시물 생성 페이지 네이게이션 가드 구현하기.
+- Vue Router의 네비게이션 가드 기능으로 로그인 안된 사용자가 글 작성 못하도록 하기 
+- Vue Router에서는 크게 '전역가드'와 '컴포넌트 가드' 두가지 형태의 네이게이션이 가드를 지원해줌. 
+## 전역 가드
+- 애플리케이션의 라우트가 변경될 때마다 호출되는 전역 가드
+## 컴포넌트 가드
+- 라우트에 해당 컴포넌트가 있을 경우 호출되는 가드.
+- -> 로그인된 사용자만 게시물 생성 기능은 컴포넌트 가드를 사용하면 됨
+- -> 게시물 생성 라우트에 beforeEnter 네비게이션을 가드를 추가하고
+- 스토어의 isAuthorized 게터를 사용하여 로그인 여부를 검사
+```
+{
+  path: '/post/create',
+  name: 'PostCreatePage',
+  components: {
+    header: AppHeader,
+    default: PostCreatePage
+  },
+  // beforeEnter 가드 훅을 추가
+  beforeEnter(to, from, next) {
+    const {isAuthorized} = store.getters;
+    if (!isAuthorized) {
+      alert('로그인이 필요합니다!');
+      // 로그인이 되어있지 않다면 로그인 페이지로 이동시킴
+      next({name : 'Signin'});
+    }
+    next();
+  }
+},
+```
+- -> 로그인한 후 접속해도 네비게이션 가드가 호출되는 중 
+## 애플리케이션 초기화 시 발생하는 통신 동기화 버그 수정하기 p.366
+- main.js에서 작성한 애플리케이션 초기화 코드 또한 비동기식으로 동작하고 있음
+```js
+if(savedToken) {
+    // 아래 액션은 비동기적으로 작동하고 있으므로 아래 Vue 인스턴스가 생성될 떄 signinByToken 액션이 완료되었음을 보장하지 못함.
+    store.dispatch('signinByToken', savedToken);
+}
+```
+- -> 자바스크립트의 Promise 객체를 사용하여 서버와 통신하여 사용자 정보를 받아오는 signinByToken 액션이 완료된 후 
+- -> Vue 인스턴스를 생성할 수 있도록 타이밍을 잡아주어야함.
+- -> 이때 Promise의 resolve() 메소드는 비동기식 로직의 성공을, reject() 메소드는 실패를 의미.
+```js
+function init(){
+  const savedToken = Cookies.get('accessToken');
+  if(savedToken){
+    // 저장된 토큰이 존재한다면 signinByToken 액션을 반환함.
+    return store.dispatch('signinByToken', savedToken);
+  }else{
+    // 토큰이 존재하지 않는다면 바로 Promise를 성공시킴.
+    return Promise.resolve();
+  }
+}
+
+init().then(res=> {
+  // init 함수의 then 체이닝 메소드 내부는 init 함수가 종료되었음을 보장받음
+  new Vue({
+    el: '#app',
+    router,
+    components: { App },
+    template: '<App/>',
+    store
+  });  
+});
+```

@@ -2,7 +2,7 @@ import api from '@/api';
 import {
   FETCH_POST_LIST,
   FETCH_POST, SET_ACCESS_TOKEN,
-  SET_MY_INFO
+  SET_MY_INFO, DESTORY_MY_INFO, DESTORY_ACCESS_TOKEN
 } from "./mutations-types";
 
 export function fetchPostList({commit}) {
@@ -43,9 +43,15 @@ export function signinByToken({commit}, token){
     })
 }
 
+export function signout({ commit }){
+  commit(DESTORY_MY_INFO);
+  commit(DESTORY_ACCESS_TOKEN);
+}
+
 export default {
   fetchPostList,
   fetchPost,
   signin,
-  signinByToken
+  signinByToken,
+  signout
 };
