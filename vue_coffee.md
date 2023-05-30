@@ -2587,3 +2587,42 @@ init().then(res=> {
   });  
 });
 ```
+
+# 주의사항
+
+## props로 받은 데이터는 반응형으로 사용할 수 없음
+- props로 받은 데이터는 반응형 데이터로 사용할 수 없기 떄문에 컴포넌트의 data속성에 다시 할당해준다.
+```js
+export default {
+  name: "PostEditForm",
+  props:{
+    post:{
+      type: Object,
+      required: true,
+      validator(post){
+        const isValidPostId = typeof post.id === 'number';
+        const isValidTitle = !!post.title && post.title.length;
+        const isValidContents = post.contents && post.contents.length;
+        return isValidPostId && isValidTitle && isValidContents;
+      }
+    }
+  },
+  data() {
+    return {
+      title: '',
+      contents: ''
+    }
+  },
+  methods: {
+    onSubmit() {
+      const {title, contents} = this;
+      this.$emit('submit', {title, contents});
+    }
+  },
+  // props로 주입받은 데이터는 반응형 데이터로 사용할 수 없기 때문에 컴포넌트의 data속성에 다시 할당해줌.
+  created(){
+    this.title = this.post.title;
+    this.contents = this.post.content;
+  }
+}
+```

@@ -7,6 +7,7 @@ import Signin from "@/pages/Signin.vue";
 import AppHeader from "../components/AppHeader.vue";
 import PostCreatePage from "../pages/PostCreatePage.vue";
 import store from "../store";
+import PostEditPage from "../pages/PostEditPage.vue";
 
 Vue.use(Router);
 
@@ -32,7 +33,7 @@ export default new Router({
         if (!isAuthorized) {
           alert('로그인이 필요합니다!');
           // 로그인이 되어있지 않다면 로그인 페이지로 이동시킴
-          next({name : 'Signin'});
+          next({name: 'Signin'});
         }
         next();
       }
@@ -47,6 +48,43 @@ export default new Router({
       props: {
         // props값 역시 대상 components의 이름으로 수정한다.
         default: true
+      }
+    },
+    {
+      path: '/post/:postId/edit',
+      name: 'PostEditPage',
+      components: {
+        header: AppHeader,
+        default: PostEditPage
+      },
+      props: {
+        default: true
+      },
+      beforeEnter(to, from, next) {
+        //게시물 생성 페이지와 마찬가지로 비로그인 사용자는 접근할 수 없음
+        const {isAuthorized} = store.getters;
+        if (!isAuthorized) {
+          alert('로그인이 필요합니다!');
+          next({name: 'Signin'});
+          return false;
+        }
+        //게시물 뷰 페이지에서 사용했던 fetchPost 액션을 재사용하기
+        store.dispatch('fetchPost', to.params.postId)
+          .then((res) => {
+            const post = store.state.post;
+            //게시물 작성자의 아이디와 현재 로그인된 사용자의 아이디가 일치하는지 확인
+            const isAuthor = post.user.id === store.state.me.id;
+            if(isAuthor){
+              next();
+            }else{
+              alert('게시물의 작성자만 게시물을 수정할 수 있습니다.');
+              next(from);
+            }
+          })
+          .catch(err => {
+            alert(err.response.data.msg);
+            next(from);
+          });
       }
     },
     {
